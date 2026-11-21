@@ -93,8 +93,22 @@
   .vs-sub{font-size:13.5px;color:var(--slate-600);line-height:1.4}
   .vs-sub b{color:var(--slate-900)}
   .vs-mid{align-self:center;font-weight:900;font-size:20px;color:var(--slate-400)}
-  .s-bars{margin:16px 0 4px}
-  .s-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+  .s-intro{font-size:clamp(15.5px,1.6vw,17.5px);line-height:1.6;color:var(--slate-700);max-width:980px;margin:0 auto 20px;text-align:center}
+  .hl{font-weight:800;color:var(--slate-900);background:#efeae6;border-radius:5px;padding:0 5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .hl.r{color:#fff;background:var(--rot)}
+  .hl.d{color:#fff;background:#232826}
+  .share{display:grid;grid-template-columns:auto 1fr;gap:6px 22px;align-items:center;margin:16px 0 0;padding:18px 22px;border-radius:14px;
+         background:linear-gradient(90deg,var(--loss-soft),#fff);border:2px solid var(--rot)}
+  .share-big{font-weight:900;font-size:clamp(56px,9vw,104px);line-height:.9;color:var(--rot);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+  .share-big small{font-size:.45em}
+  .share-txt{font-size:clamp(15px,1.7vw,18px);font-weight:700;line-height:1.4;color:var(--slate-900)}
+  .share-txt .sub{display:block;font-size:13.5px;font-weight:500;color:var(--slate-600);margin-top:6px}
+  .tl{margin-top:16px;border:1px solid var(--slate-200);border-radius:14px;padding:14px 16px 8px;background:#fff}
+  .tl-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .tl-head h3{font-size:16px}
+  .tl svg text{font-family:inherit}
+  @media (max-width:760px){ .share{grid-template-columns:1fr;text-align:center;padding:16px 14px} .tl{padding:12px 8px 6px} }
+  .s-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
   .fact{background:var(--navy-soft);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--slate-600);line-height:1.35}
   .fact b{display:block;font-size:20px;font-weight:900;color:var(--slate-900);font-variant-numeric:tabular-nums;margin-bottom:2px}
   .fact.r b{color:var(--rot)}
@@ -160,7 +174,20 @@
   input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--c);box-shadow:0 2px 6px rgba(0,0,0,.2);cursor:grab}
   input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12);cursor:grabbing}
   input[type=range]:focus-visible::-webkit-slider-thumb{outline:3px solid var(--orange);outline-offset:2px}
-  input.r-loss{--c:var(--rot);background:linear-gradient(90deg,var(--orangehell),var(--rot)) 0 0/var(--fill) 100% no-repeat,#e8e4e1}
+  /* Wertverlust-Regler: realistischer Bereich 6–14 % kräftig, Außenbereiche fließend blasser (0–35 % Skala) */
+  input.r-loss{--c:var(--rot);height:12px;background:
+      linear-gradient(90deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.5) 10%,rgba(255,255,255,0) 17.1%,rgba(255,255,255,0) 40%,rgba(255,255,255,.5) 52%,rgba(255,255,255,.85) 80%),
+      linear-gradient(90deg,var(--orangehell),var(--rot)) 0 0/var(--fill) 100% no-repeat,
+      linear-gradient(90deg,#ece8e4 0%,#d6d0ca 17.1%,#d6d0ca 40%,#ece8e4 60%)}
+  .realism{position:relative;height:18px;margin:0 0 2px;font-size:11px;font-weight:700;color:var(--slate-400)}
+  .realism .zone{position:absolute;left:17.1%;width:22.9%;top:0;text-align:center;color:var(--gruen);border-top:2px solid var(--hellgruen);padding-top:1px;white-space:nowrap}
+  .realism .lo{position:absolute;left:0;top:3px}
+  .realism .hi{position:absolute;right:0;top:3px}
+  @media (max-width:640px){ .realism .lo,.realism .hi{display:none} }
+  .verdict{font-size:12px;font-weight:800;border-radius:99px;padding:1px 8px;white-space:nowrap}
+  .verdict.ok{background:var(--keep-soft);color:var(--gruen)}
+  .verdict.lo{background:#eef0ee;color:var(--slate-500)}
+  .verdict.hi{background:var(--amber-soft);color:#7a4a05}
   input.r-gst{--c:var(--navy)}
 
   .seg{border:1px solid var(--slate-200);border-radius:11px;padding:10px 12px;margin-top:10px;border-left:5px solid var(--sc)}
@@ -344,7 +371,7 @@
   .print-only{display:none}
 
   /* ============ Responsiv ============ */
-  @media (max-width:1180px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:1180px){ .kpis{grid-template-columns:repeat(2,1fr)} .s-facts{grid-template-columns:repeat(2,minmax(0,1fr))} }
   @media (max-width:1023px){
     .layout{grid-template-columns:1fr}
     .panel{position:static;max-height:none}
@@ -410,6 +437,8 @@
   <!-- ================= EINFACHE ANSICHT: Gegenüberstellung Stadt vs. Bürger ================= -->
   <section class="card simple" id="simple" aria-live="polite">
     <p class="s-q">Was nimmt die Stadt ein – und was verlieren die Bürger an Wert, wenn das <span class="gkw">Gaskraftwerk</span> kommt?</p>
+    <!-- Einleitungstext: alle hervorgehobenen Zahlen werden live aus den Einstellungen berechnet -->
+    <p class="s-intro" id="sIntro"></p>
     <div class="vs">
       <div class="vs-box city">
         <div class="vs-lbl">Die Stadt nimmt ein</div>
@@ -423,16 +452,27 @@
         <div class="vs-sub" id="cLossSub"></div>
       </div>
     </div>
-    <div class="s-bars">
-      <div class="cbar"><div class="cl"><span>Stadt: Gewerbesteuer <span class="muted small">(Annahme, nicht belegt)</span></span></div>
-        <div class="track" data-tip id="cGstT"><div class="fill" id="cGstF" style="background:var(--navy)"></div></div></div>
-      <div class="cbar"><div class="cl"><span>Bürger: Wertverlust ihrer Häuser <span class="muted small">(sofort)</span></span></div>
-        <div class="track" data-tip id="cLossT"><div class="fill" id="cLossF" style="background:var(--loss)"></div></div></div>
+
+    <!-- Große Prozentzahl: Anteil, den die Bürger mittragen -->
+    <div class="share">
+      <div class="share-big" id="shareBig">–</div>
+      <div class="share-txt" id="shareTxt"></div>
     </div>
+
+    <!-- Zeitachse: wer trägt wann die Last? -->
+    <div class="tl">
+      <div class="tl-head">
+        <div><h3>Wer trägt wann die Last?</h3><div class="small muted" id="tlSub"></div></div>
+        <div class="legend"><span><i style="background:var(--rot)"></i>Wertverlust der Bürger</span><span><i style="background:#232826"></i>Gewerbesteuer der Stadt, aufsummiert</span><span><i style="background:repeating-linear-gradient(45deg,#f4b9b3 0 3px,#fdeee9 3px 6px)"></i>Last liegt bei den Bürgern</span></div>
+      </div>
+      <div id="timeline"></div>
+    </div>
+
     <div class="s-facts">
-      <div class="fact r"><b id="fPerHouse">–</b>Verlust je Haus, sobald das <span class="gkw">Gaskraftwerk</span> feststeht</div>
-      <div class="fact"><b id="fPerYear">–</b>Gewerbesteuer pro Jahr, frühestens nach Bau und Inbetriebnahme (Baubeginn laut Presse ab 2028)</div>
+      <div class="fact r"><b id="fPerHouse">–</b>Verlust je Haus, ab Baubeginn</div>
+      <div class="fact"><b id="fPerYear">–</b>Gewerbesteuer pro Jahr, frühestens ab Inbetriebnahme</div>
       <div class="fact"><b id="cYears">–</b><span id="cYearsTxt"></span></div>
+      <div class="fact r"><b id="fGrest">–</b><span id="fGrestTxt"></span></div>
     </div>
 
     <!-- Die wichtigsten Regler direkt in der einfachen Ansicht -->
@@ -443,8 +483,9 @@
           <div class="field"><input id="snN" inputmode="numeric" class="w-s" aria-label="Anzahl Häuser (Zahl)"><span>Häuser</span></div></div>
       </div>
       <div class="ctl">
-        <div class="ctl-head"><label for="slR">Wertverlust</label><span class="hint">0 – 35 %</span></div>
-        <div class="row"><input type="range" class="r-loss" id="slR" min="0" max="35" step="1" aria-label="Wertverlust in Prozent">
+        <div class="ctl-head"><label for="slR">Wertverlust</label><span class="verdict"></span></div>
+        <div class="row"><div style="flex:1;min-width:0"><input type="range" class="r-loss" id="slR" min="0" max="35" step="1" aria-label="Wertverlust in Prozent" style="width:100%">
+          <div class="realism"><span class="lo">gering</span><span class="zone">realistisch 6–14 %</span><span class="hi">unwahrscheinlich hoch</span></div></div>
           <div class="field"><input id="slN" inputmode="numeric" class="w-s" aria-label="Wertverlust (Zahl)"><span>%</span></div></div>
         <div class="chips loss-chips"></div>
       </div>
@@ -499,9 +540,10 @@
 
       <!-- Wertverlust -->
       <div class="ctl">
-        <div class="ctl-head"><label for="lossRange">Simulierter Wertverlust</label><span class="hint">0 – 35 %</span></div>
+        <div class="ctl-head"><label for="lossRange">Simulierter Wertverlust</label><span class="verdict"></span></div>
         <div class="row">
-          <input type="range" class="r-loss" id="lossRange" min="0" max="35" step="1" aria-label="Wertverlust in Prozent">
+          <div style="flex:1;min-width:0"><input type="range" class="r-loss" id="lossRange" min="0" max="35" step="1" aria-label="Wertverlust in Prozent" style="width:100%">
+          <div class="realism"><span class="lo">gering</span><span class="zone">realistisch 6–14 %</span><span class="hi">unwahrscheinlich hoch</span></div></div>
           <div class="field"><input id="lossNum" inputmode="numeric" class="w-s" aria-label="Wertverlust (Zahl)"><span>%</span></div>
         </div>
         <div class="chips loss-chips"></div>
@@ -520,7 +562,32 @@
           <input type="range" class="r-gst" id="yrsRange" min="5" max="40" step="1" aria-label="Zeitraum in Jahren">
           <div class="field"><input id="yrsNum" inputmode="numeric" class="w-s" aria-label="Zeitraum (Zahl)"><span>Jahre</span></div>
         </div>
+        <div class="ctl-head" style="margin-top:12px"><label for="bauR">Baubeginn</label><span class="hint">laut Presse ab 2028</span></div>
+        <div class="row">
+          <input type="range" class="r-gst" id="bauR" min="2026" max="2035" step="1" aria-label="Jahr des Baubeginns">
+          <div class="field"><input id="bauN" inputmode="numeric" class="w-s" aria-label="Baubeginn (Jahr)"><span>Jahr</span></div>
+        </div>
+        <div class="ctl-head" style="margin-top:12px"><label for="dauerR">Bauzeit bis Inbetriebnahme</label><span class="hint">laut Presse ca. 2 Jahre</span></div>
+        <div class="row">
+          <input type="range" class="r-gst" id="dauerR" min="1" max="6" step="1" aria-label="Bauzeit in Jahren">
+          <div class="field"><input id="dauerN" inputmode="numeric" class="w-s" aria-label="Bauzeit (Jahre)"><span>Jahre</span></div>
+        </div>
         <div class="assume">Annahme, nicht belegt: Ein Betreiber ist bisher nicht bekannt, und für die Gewerbesteuereinnahmen gibt es keinen Beleg. Im Werbeprospekt des Projektierers standen 3,5 Mio. €/Jahr; nach dessen eigenen späteren Angaben bleiben 1,6 Mio. €/Jahr (Positionspapier der BI).</div>
+      </div>
+
+      <!-- Grunderwerbsteuer -->
+      <div class="ctl">
+        <div class="ctl-head"><label for="saleR">Hausverkäufe pro Jahr</label><span class="hint">Anteil der Häuser, Annahme</span></div>
+        <div class="row">
+          <input type="range" class="r-gst" id="saleR" min="0" max="6" step="0.5" aria-label="Verkaufsquote in Prozent pro Jahr">
+          <div class="field"><input id="saleN" inputmode="decimal" class="w-s" aria-label="Verkaufsquote (Zahl)"><span>% / J.</span></div>
+        </div>
+        <div class="ctl-head" style="margin-top:12px"><label for="grestR">Grunderwerbsteuer</label><span class="hint">Hessen: 6 %</span></div>
+        <div class="row">
+          <input type="range" class="r-gst" id="grestR" min="3.5" max="6.5" step="0.5" aria-label="Grunderwerbsteuersatz in Prozent">
+          <div class="field"><input id="grestN" inputmode="decimal" class="w-s" aria-label="Grunderwerbsteuersatz (Zahl)"><span>%</span></div>
+        </div>
+        <p class="small muted" style="margin:8px 0 0">Wird ein Haus mit geringerem Wert verkauft, fällt weniger Grunderwerbsteuer an. Gerechnet ab Baubeginn bis zum Ende des gewählten Zeitraums.</p>
       </div>
 
       <div class="btns no-print" style="margin-top:6px">
@@ -581,6 +648,10 @@
           <li>Dies ist eine Modellrechnung der Bürgerinitiative „Lebenswertes Schlüchtern“, kein Wertgutachten. Anzahl, Werte und Wertverlust-Prozentsätze sind Annahmen, die Sie selbst einstellen.</li>
           <li>Rechnung: Gesamtwert = Anzahl Objekte × Σ (Anteil der Klasse × Durchschnittswert der Klasse). Verlust = Gesamtwert × Wertverlust in %.</li>
           <li>Gewerbesteuer: Ein Betreiber des <span class="gkw">Gaskraftwerks</span> ist bisher nicht bekannt; der Projektierer will das Projekt nach eigenen Angaben nicht selbst betreiben. Belege für die genannten Einnahmen gibt es nicht. Die Summe ist nominal (ohne Inflation und Abzinsung) über den gewählten Zeitraum gerechnet.</li>
+          <li>Zeitlicher Ablauf: Der Wertverlust wird ab Baubeginn angesetzt (realistisch oft schon mit Bekanntwerden der Pläne). Gewerbesteuer wird ab dem Jahr der Inbetriebnahme jährlich gerechnet, ohne Anlaufverluste, die bei neuen Anlagen durch Abschreibungen üblich sind.</li>
+          <li>Grunderwerbsteuer: Satz in Hessen 6 % des Kaufpreises (geht an das Land). Entgangene Steuer = Häuser × Verkaufsquote × Jahre × Wertverlust je Haus × Steuersatz. Die Grundsteuer ist nicht betroffen, weil Hessen sie seit 2025 nach Fläche und Lage berechnet, nicht nach dem Marktwert.</li>
+          <li>Studienlage: Eichholtz, Kok, Langen, van Vulpen u. a. (2023, Journal of Real Estate Finance and Economics) werten Hausverkäufe in den Niederlanden von 1985 bis 2015 aus und finden negative Preiseffekte im Umfeld neu eröffneter Gaskraftwerke. Davis (2011, Review of Economics and Statistics) findet in den USA im Umkreis von rund 3 km um neue Kraftwerke 3–7 % niedrigere Hauswerte und Mieten, mit Hinweisen auf stärkere Effekte innerhalb von 1,6 km und bei großen Anlagen.</li>
+          <li>Warum 10 % als Startwert: Die Studien messen Durchschnitte über viele, oft bereits industriell geprägte Standorte. Schlüchtern hat bisher keine nennenswerte Industrie, wirbt als Luftkurort, und das <span class="gkw">Gaskraftwerk</span> wäre überdurchschnittlich groß und läge erhöht am Stadtrand. Deshalb setzt die BI den Effekt oberhalb der Studienmittel an. Als realistisch gilt hier ein Bereich von 6 bis 14 %; Werte außerhalb sind im Regler blasser dargestellt.</li>
           <li>Das Positionspapier der BI (Stand 11.11.2026) beschreibt einen „spürbaren Wertverlust von Wohneigentum und Grundstücken“ durch einen Industriekomplex dieser Größe im Sicht- und Hörfeld.</li>
         </ul>
       </div>
@@ -683,7 +754,7 @@
       <div class="ob-step" data-s="2"><div class="demo-bars"><span style="--h:12%"></span><span style="--h:24%"></span><span style="--h:36%"></span><span style="--h:48%"></span><span style="--h:60%"></span></div></div>
     </div>
     <div class="ob-text">
-      <p class="on"><b>Auf einen Blick.</b> Ganz oben steht, was die Stadt an Gewerbesteuer einnehmen könnte und was die Bürger an Immobilienwert verlieren. Vorausgefüllt: 200 Häuser, 20 % Wertverlust, 20 Jahre, 1,6 Mio. € pro Jahr.</p>
+      <p class="on"><b>Auf einen Blick.</b> Ganz oben steht, was die Stadt an Gewerbesteuer einnehmen könnte, was die Bürger an Immobilienwert verlieren und wer wann die Last trägt. Vorausgefüllt: 300 Häuser, 10 % Wertverlust, 20 Jahre, 1,6 Mio. € pro Jahr.</p>
       <p><b>Selbst anpassen.</b> Die wichtigsten Werte ändern Sie direkt darunter per Schieberegler. In der „Detaillierten Ansicht“ gibt es 6 Szenarien, vom vorsichtigen bis zum Worst Case, und die drei Wertklassen mit Anteilen und Durchschnittswerten.</p>
       <p><b>Ergebnis ablesen.</b> Zahlen, Diagramme und die Stufentabelle rechnen sofort mit. Ihre gewählte Stufe ist farbig hervorgehoben. Das Ergebnis können Sie als CSV laden oder drucken.</p>
     </div>
@@ -716,21 +787,25 @@ const GST_OPTIONS = [
   { v:3.5, sub:"Werbeprospekt" },
 ];
 /** Startwerte der einfachen Ansicht (Vorgabe Christian, 21.11.2026) */
-const START = { n:200, shares:[25,50,25], avgs:[200000,375000,750000], loss:20, gst:1.6, years:20 };
+const START = { n:300, shares:[25,50,25], avgs:[200000,375000,750000], loss:10, gst:1.6, years:20 };
+/** Realistischer Bereich des Wertverlusts (Begründung siehe „Annahmen & Hinweise“) */
+const REALISTIC = { min:6, max:14 };
+/** Schnellwahl-Stufen für den Wertverlust */
+const LOSS_CHIPS = [5, 8, 10, 12, 15, 20];
+/** Zeitachse & Grunderwerbsteuer (Presse: Baubeginn ab 2028, Bauzeit ca. 2 Jahre; Hessen 6 %) */
+const TIMING = { bau:2028, dauer:2, sale:2, grest:6 };
 
 const PRESETS = [
-  { id:"start",   title:"Startwerte",
-    desc:"200 Häuser, übliche Durchmischung, 20 % Verlust, 20 Jahre Gewerbesteuer", ...START, label:"START" },
-  { id:"basis",   title:"Basis-Szenario (Standard)",
-    desc:"200 Objekte, übliche Durchmischung", n:200, shares:[25,50,25], avgs:[200000,375000,750000], loss:15 },
-  { id:"konserv", title:"Konservativ / geringe Beeinträchtigung",
-    desc:"Gleiche Werte, nur Sicht- und Lärmwahrnehmung", n:200, shares:[25,50,25], avgs:[200000,375000,750000], loss:5 },
-  { id:"kern",    title:"Kernzone Am Reitstück",
-    desc:"80 Objekte, direkte Nachbarschaft, höherwertige Einfamilienhäuser", n:80, shares:[0,40,60], avgs:[200000,450000,800000], loss:25 },
-  { id:"radius",  title:"Erweiterter Radius (Schlüchtern & Elm)",
-    desc:"450 Objekte, breite Durchmischung", n:450, shares:[35,45,20], avgs:[220000,380000,700000], loss:10 },
-  { id:"worst",   title:"Worst Case (maximaler Abschlag)",
-    desc:"250 Objekte, hohe Immobilienwerte", n:250, shares:[20,50,30], avgs:[250000,450000,900000], loss:25 },
+  { id:"start",  title:"Startwerte (realistisch)",
+    desc:"300 Häuser, übliche Durchmischung, 10 % Verlust, 20 Jahre Gewerbesteuer", ...START, label:"START" },
+  { id:"studie", title:"Untergrenze laut Studien",
+    desc:"Durchschnittswerte aus den Niederlanden und den USA, ohne Kurort- und Lageeffekt", n:300, shares:[25,50,25], avgs:[200000,375000,750000], loss:5 },
+  { id:"kern",   title:"Kernzone Am Reitstück",
+    desc:"80 Häuser in direkter Nachbarschaft, höherwertige Einfamilienhäuser, stärkster Effekt", n:80, shares:[0,40,60], avgs:[200000,450000,800000], loss:15 },
+  { id:"radius", title:"Erweiterter Radius (Schlüchtern & Elm)",
+    desc:"450 Häuser, breite Durchmischung, weiter entfernt, daher geringerer Abschlag", n:450, shares:[35,45,20], avgs:[220000,380000,700000], loss:7 },
+  { id:"worst",  title:"Worst Case (maximaler Abschlag)",
+    desc:"350 Häuser, hohe Immobilienwerte, Abschlag oberhalb des realistischen Bereichs", n:350, shares:[20,50,30], avgs:[250000,450000,900000], loss:20 },
 ];
 
 /* =====================================================================
@@ -739,7 +814,9 @@ const PRESETS = [
 const state = {
   n:START.n, shares:[...START.shares], avgs:[...START.avgs], loss:START.loss,
   gst:START.gst,     // Gewerbesteuer in Mio. € pro Jahr (Annahme)
-  years:START.years, // Zeitraum in Jahren
+  years:START.years, // Zeitraum in Jahren (Gewerbesteuer ab Inbetriebnahme)
+  bau:TIMING.bau, dauer:TIMING.dauer,   // Baubeginn, Bauzeit
+  sale:TIMING.sale, grest:TIMING.grest, // Verkäufe %/Jahr, Grunderwerbsteuer %
   preset:"start",
 };
 
@@ -760,6 +837,19 @@ function calcAt(pct, s = state){
   return { pct, vals, segLoss, total, loss, rest: total - loss };
 }
 function gstTotal(){ return state.gst * 1e6 * state.years; }
+/** Jahr der ersten Gewerbesteuer-Einnahme (= Inbetriebnahme) */
+function opStart(){ return state.bau + state.dauer; }
+/** Nach wie vielen Betriebsjahren hat die Stadt den Wertverlust „eingenommen“? (null = nie im Zeitraum) */
+function breakEvenYears(loss){
+  if (state.gst <= 0) return null;
+  const y = Math.ceil(loss / (state.gst * 1e6) - 1e-9);
+  return y <= state.years ? Math.max(1, y) : null;
+}
+/** Entgangene Grunderwerbsteuer bei Verkäufen ab Baubeginn bis Ende des Zeitraums */
+function grestLost(loss){
+  const yrs = state.dauer + state.years;
+  return loss * (state.sale / 100) * yrs * (state.grest / 100);
+}
 
 /** Anteile proportional anpassen, sodass die Summe immer 100 % ergibt. */
 function setShare(idx, value){
@@ -807,10 +897,10 @@ function renderPresets(){
   $("presets").innerHTML = PRESETS.map((p, i) => `
     <button class="preset" data-id="${p.id}" aria-pressed="false">
       <span class="check">✓</span>
-      <div class="pn">${p.label || "SZENARIO " + i}</div>
+      <div class="pn">${p.label || "SZENARIO " + (i + 1)}</div>
       <div class="pt">${p.title}</div>
       <div class="pd">${p.desc}</div>
-      <span class="pl">${p.n} Objekte · ${p.loss} % Verlust</span>
+      <span class="pl">${p.n} Häuser · ${p.loss} % Verlust</span>
     </button>`).join("");
   $("presets").querySelectorAll(".preset").forEach(b =>
     b.addEventListener("click", () => applyPreset(b.dataset.id)));
@@ -818,7 +908,7 @@ function renderPresets(){
 function applyPreset(id){
   const p = PRESETS.find(x => x.id === id);
   Object.assign(state, { n:p.n, shares:[...p.shares], avgs:[...p.avgs], loss:p.loss, preset:id });
-  if (p.gst !== undefined){ state.gst = p.gst; state.years = p.years; }   // nur „Startwerte“ setzt auch Steuer & Jahre
+  if (p.gst !== undefined){ state.gst = p.gst; state.years = p.years; Object.assign(state, TIMING); }   // nur „Startwerte“ setzt auch Steuer & Jahre
   syncInputs(); update(true);
 }
 /** Prüfen, ob die aktuellen Werte noch exakt einem Preset entsprechen */
@@ -878,6 +968,10 @@ function syncInputs(){
   set("lossRange", state.loss); $("lossNum").value = state.loss;
   set("gstRange", state.gst); $("gstNum").value = nf1.format(state.gst);
   set("yrsRange", state.years); $("yrsNum").value = state.years;
+  set("bauR", state.bau); $("bauN").value = state.bau;
+  set("dauerR", state.dauer); $("dauerN").value = state.dauer;
+  set("saleR", state.sale); $("saleN").value = nf1.format(state.sale);
+  set("grestR", state.grest); $("grestN").value = nf1.format(state.grest);
   // einfache Ansicht
   set("snR", state.n); $("snN").value = nf0.format(state.n);
   set("slR", state.loss); $("slN").value = state.loss;
@@ -889,6 +983,10 @@ function syncInputs(){
   });
   // Schnellwahl-Chips markieren
   document.querySelectorAll(".loss-chips .chip").forEach(c => c.classList.toggle("on", +c.dataset.v === state.loss));
+  const L = state.loss;
+  const [vt, vc] = L < 4 ? ["sehr gering", "lo"] : L < REALISTIC.min ? ["Untergrenze laut Studien", "lo"]
+    : L <= REALISTIC.max ? ["realistischer Bereich", "ok"] : L < 20 ? ["eher hoch", "hi"] : ["unwahrscheinlich hoch", "hi"];
+  document.querySelectorAll(".verdict").forEach(el => { el.textContent = vt; el.className = "verdict " + vc; });
   document.querySelectorAll(".gst-chips .chip").forEach(c => c.classList.toggle("on", Math.abs(+c.dataset.gst - state.gst) < 1e-9));
 }
 
@@ -941,27 +1039,127 @@ function setKpi(id, txt){
 
 /* --- Gegenüberstellung oben: Stadt nimmt ein vs. Bürger verlieren --- */
 function renderCompare(cur){
-  const g = gstTotal();
-  const max = Math.max(cur.loss, g, 1);
+  const g = gstTotal(), op = opStart(), end = op + state.years - 1;
+  const perHouse = state.n ? cur.loss / state.n : 0;
   const big = v => `${(v < 1e6 ? nf2 : nf1).format(v / 1e6)}<small>Mio. €</small>`;
+  const H = (t, c = "") => `<span class="hl ${c}">${t}</span>`;
+  const be = breakEvenYears(cur.loss);
+  const share = g > 0 ? cur.loss / g * 100 : null;
+  const gl = grestLost(cur.loss);
+
   $("cGstV").innerHTML = big(g);
   $("cLossV").innerHTML = big(cur.loss);
-  $("cGstSub").innerHTML = `Gewerbesteuer <b>${nf1.format(state.gst)} Mio. €</b> × <b>${state.years} Jahre</b><br>Annahme, nicht belegt`;
-  $("cLossSub").innerHTML = `<b>${nf0.format(state.n)} Häuser</b> × Ø ${eur(state.n ? cur.total / state.n : 0)} × <b>${state.loss} %</b> Wertverlust`;
-  $("cLossF").style.width = (cur.loss / max * 100) + "%";
-  $("cGstF").style.width = (g / max * 100) + "%";
-  $("cLossT").dataset.tip = `<b>Wertverlust der Bürger</b><br>${eur(cur.loss)}<br>${state.loss} % von ${mio(cur.total)}`;
-  $("cGstT").dataset.tip = `<b>Gewerbesteuer (Annahme)</b><br>${eur(g)}<br>${nf1.format(state.gst)} Mio. € pro Jahr × ${state.years} Jahre`;
-  $("fPerHouse").textContent = "− " + eur(state.n ? cur.loss / state.n : 0);
-  $("fPerYear").textContent = nf1.format(state.gst) + " Mio. €";
-  $("sAvg").textContent = eur(state.n ? cur.total / state.n : 0);
-  if (state.gst > 0){
-    $("cYears").textContent = nf1.format(cur.loss / (state.gst * 1e6)) + " Jahre";
-    $("cYearsTxt").textContent = "Gewerbesteuer bräuchte die Stadt, um rechnerisch den Wertverlust der Bürger aufzuwiegen";
+  $("cGstSub").innerHTML = `Gewerbesteuer <b>${nf1.format(state.gst)} Mio. €</b> pro Jahr × <b>${state.years} Jahre</b><br>frühestens ab <b>${op}</b>, Jahr für Jahr · Annahme, nicht belegt`;
+  $("cLossSub").innerHTML = `<b>${nf0.format(state.n)} Häuser</b> × Ø ${eur(state.n ? cur.total / state.n : 0)} × <b>${state.loss} %</b><br>auf einen Schlag, ab Baubeginn <b>${state.bau}</b>`;
+
+  // Einleitungstext mit Live-Werten
+  $("sIntro").innerHTML =
+    `Wird das <span class="gkw">Gaskraftwerk</span> gebaut, verlieren nach dieser Annahme ${H(nf0.format(state.n) + " Häuser")} im Umfeld im Schnitt ${H(state.loss + " %", "r")} an Wert, ` +
+    `zusammen ${H(mio(cur.loss), "r")} oder ${H(eur(perHouse), "r")} je Haus. Diesen Verlust tragen die Eigentümer ${H("sofort ab Baubeginn " + state.bau)}. ` +
+    `Die Stadt erhält dagegen, wenn überhaupt, Gewerbesteuer von ${H(nf1.format(state.gst) + " Mio. € pro Jahr", "d")}, frühestens ab ${H(op, "d")} und nur Jahr für Jahr. ` +
+    (be ? `Erst nach ${H(be + " Betriebsjahren")}, bis ca. ${H(op + be - 1)}, erhofft sich die Stadt die Einnahmen, die den Hausbesitzern mit Beginn des Baus an Wert verloren gegangen sind. `
+        : (state.gst > 0 ? `Selbst nach ${H(state.years + " Jahren")} erreichen die erhofften Einnahmen der Stadt nicht den Wert, den die Hausbesitzer mit Beginn des Baus verloren haben. ` : "")) +
+    (share !== null ? `Über ${H(state.years + " Jahre")} gerechnet entspricht der Wertverlust ${H(nf0.format(share) + " %", "r")} der gesamten Gewerbesteuer. ` : "") +
+    (gl > 0 ? `Zusätzlich entgehen dem Land bei späteren Hausverkäufen rund ${H(mio(gl), "r")} Grunderwerbsteuer.` : "");
+
+  // Große Prozentzahl
+  if (share !== null){
+    $("shareBig").innerHTML = `${nf0.format(share)}<small>%</small>`;
+    $("shareTxt").innerHTML = `So viel, gemessen an der Gewerbesteuer der Stadt, verlieren die Bürger an Hauswert.` +
+      `<span class="sub">Für jeden Euro, den die Stadt in ${state.years} Jahren einnimmt, verlieren die Eigentümer ${nf0.format(share)} Cent. ` +
+      `Bis ${op - 1} tragen die Bürger 100 % der Last, denn bis dahin nimmt die Stadt noch nichts ein.</span>`;
   } else {
-    $("cYears").textContent = "0 €";
-    $("cYearsTxt").textContent = "Ohne Gewerbesteuer steht dem Wertverlust keine Einnahme gegenüber";
+    $("shareBig").innerHTML = `100<small>%</small>`;
+    $("shareTxt").innerHTML = `der Last tragen die Bürger: Ohne Gewerbesteuer steht dem Wertverlust keine Einnahme gegenüber.`;
   }
+
+  $("fPerHouse").textContent = "− " + eur(perHouse);
+  $("fPerYear").textContent = nf1.format(state.gst) + " Mio. €";
+  if (be){
+    $("cYears").textContent = `${be} Jahre`;
+    $("cYearsTxt").textContent = `Betrieb, bis die Stadt sich Einnahmen in Höhe des Wertverlusts der Hausbesitzer erhofft (ca. ${op + be - 1})`;
+  } else {
+    $("cYears").textContent = `> ${state.years} Jahre`;
+    $("cYearsTxt").textContent = "Im gewählten Zeitraum erreichen die erhofften Einnahmen nicht den Wertverlust der Hausbesitzer";
+  }
+  $("fGrest").textContent = "− " + mio(gl);
+  $("fGrestTxt").textContent = `Grunderwerbsteuer entgeht dem Land (${nf1.format(state.sale)} % Verkäufe pro Jahr, ${nf1.format(state.grest)} %)`;
+  $("sAvg").textContent = eur(state.n ? cur.total / state.n : 0);
+  renderTimeline(cur);
+}
+
+/** Zeitachse: Wertverlust (sofort, ab Baubeginn) vs. aufsummierte Gewerbesteuer (jährlich, ab Inbetriebnahme) */
+function renderTimeline(cur){
+  const box = $("timeline");
+  const op = opStart(), y0 = state.bau - 1, y1 = op + state.years - 1;
+  const W = Math.max(300, Math.min(1200, box.clientWidth || 700)), H = W < 560 ? 280 : 300;
+  const L = 46, R = 12, T = 34, B = 40, small = W < 560;
+  const g = gstTotal(), loss = cur.loss, gy = state.gst * 1e6;
+  const step = niceStep(Math.max(loss, g, 1) / 1e6 * 1.05);
+  const yMax = Math.max(step, Math.ceil(Math.max(loss, g, 1) / 1e6 * 1.05 / step) * step);
+  const X = yr => L + (W - L - R) * (yr - y0) / (y1 + 1 - y0);   // Jahr → x (Jahresanfang)
+  const Y = v => T + (H - T - B) * (1 - v / 1e6 / yMax);
+  const cum = yr => yr < op ? 0 : Math.min(state.years, yr - op + 1) * gy;   // Summe bis Jahresende
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block" role="img" aria-label="Zeitachse: Wertverlust der Bürger und aufsummierte Gewerbesteuer der Stadt">
+    <defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fdeee9"/><rect width="3" height="6" fill="#f4b9b3"/></pattern></defs>`;
+  for (let v = 0; v <= yMax + 1e-9; v += step){
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(v * 1e6)}" y2="${Y(v * 1e6)}" stroke="${v ? "#ece8e4" : "#9aa39e"}"/>`;
+    s += `<text x="${L - 7}" y="${Y(v * 1e6) + 4}" text-anchor="end" font-size="12" fill="#5b6560">${nf0.format(v)}</text>`;
+  }
+  s += `<text x="${L - 7}" y="${T - 16}" text-anchor="end" font-size="11" fill="#5b6560">Mio. €</text>`;
+  // Schraffur: Jahre, in denen die Bürger mehr tragen, als die Stadt eingenommen hat
+  for (let yr = state.bau; yr <= y1; yr++){
+    const c = cum(yr - 1);   // Stand zu Jahresbeginn
+    if (loss > c) s += `<rect x="${X(yr)}" y="${Y(loss)}" width="${X(yr + 1) - X(yr)}" height="${Y(c) - Y(loss)}" fill="url(#hatch)"/>`;
+  }
+  // Bauphase markieren
+  s += `<rect x="${X(state.bau)}" y="${T}" width="${X(op) - X(state.bau)}" height="${H - T - B}" fill="#232826" opacity=".05"/>`;
+  s += `<text x="${(X(state.bau) + X(op)) / 2}" y="${T - 8}" text-anchor="middle" font-size="12" font-weight="800" fill="#5b6560">${X(op) - X(state.bau) > 50 ? "Bauphase" : "Bau"}</text>`;
+  // Linie Wertverlust (Stufe bei Baubeginn)
+  s += `<path d="M${X(y0)} ${Y(0)} H${X(state.bau)} V${Y(loss)} H${X(y1 + 1)}" fill="none" stroke="#CD281E" stroke-width="3.5" stroke-linejoin="round"/>`;
+  // Treppe Gewerbesteuer (aufsummiert)
+  // Einnahmen eines Jahres sind am Jahresende „da“: Stufe jeweils am Ende des Jahres
+  let d = `M${X(y0)} ${Y(0)} H${X(op + 1)}`;
+  for (let yr = op; yr < y1; yr++) d += ` V${Y(cum(yr))} H${X(yr + 2)}`;
+  d += ` V${Y(cum(y1))}`;
+  s += `<path d="${d}" fill="none" stroke="#232826" stroke-width="3" stroke-linejoin="round"/>`;
+  // Schnittpunkt
+  const be = breakEvenYears(loss);
+  if (be){
+    const yr = op + be - 1, x = X(yr + 1);
+    s += `<line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="#232826" stroke-dasharray="4 4"/>`;
+    // Zweizeilige Beschriftung (Formulierung nach Vorgabe der BI)
+    const lines = small ? [`Bis Ende ${yr} erhofft`, `die Stadt Einnahmen`, `in Höhe des Wertverlusts`]
+                       : [`Bis Ende ${yr} erhofft sich die Stadt die Einnahmen,`, `die den Hausbesitzern mit Baubeginn an Wert verloren gingen`];
+    // Text auf die Seite mit mehr Platz setzen
+    const right = (x - L) < (W - L - R) / 2;
+    const tx = right ? x + 6 : x - 6, ta = right ? "start" : "end";
+    lines.forEach((t, i) => s += `<text x="${tx}" y="${T + 14 + i * 15}" text-anchor="${ta}" font-size="${small ? 11.5 : 12.5}" font-weight="800" fill="#232826">${t}</text>`);
+  }
+  // Beschriftungen
+  s += `<circle cx="${X(state.bau)}" cy="${Y(loss)}" r="5" fill="#CD281E"/>`;
+  s += `<text x="${X(state.bau) + 8}" y="${Y(loss) - 8}" font-size="12.5" font-weight="800" fill="#CD281E">${small ? "− " + mio(loss) + " sofort" : state.bau + ": Bürger verlieren " + mio(loss) + " sofort"}</text>`;
+  // x-Achse: Jahreszahl mittig unter der Jahresspalte, Abstand je nach verfügbarer Breite
+  const colW = X(y0 + 1) - X(y0);
+  const every = [1, 2, 5, 10].find(e => e * colW >= 40) || 10;
+  for (let yr = y0; yr <= y1; yr++){
+    const crowd = (op - state.bau) * colW < 36;   // Baubeginn und Inbetriebnahme liegen zu eng
+    if (yr === op && crowd) continue;
+    const imp = yr === state.bau || yr === op;
+    if (!imp && (yr % every)) continue;
+    if (!imp && [state.bau, op].some(k => Math.abs(k - yr) * colW < 36)) continue;   // Überlappung mit Schlüsseljahren vermeiden
+    s += `<text x="${X(yr) + colW / 2}" y="${H - B + 18}" text-anchor="middle" font-size="${imp ? 12.5 : 11.5}" font-weight="${imp ? 800 : 500}" fill="${yr === state.bau ? "#CD281E" : "#5b6560"}">${yr}</text>`;
+  }
+  s += `<text x="${X(op) + colW / 2}" y="${H - B + 33}" text-anchor="${small ? "start" : "middle"}" font-size="11" font-weight="700" fill="#232826">${(op - state.bau) * colW < 36 ? "↑ Inbetriebnahme " + op : "Inbetriebnahme"}</text>`;
+  // Tooltip-Flächen pro Jahr
+  for (let yr = state.bau; yr <= y1; yr++){
+    const c = cum(yr);
+    const tip = `<b>${yr}${yr < op ? " (Bauphase)" : ""}</b><br>Wertverlust Bürger: ${mio(loss)}<br>Gewerbesteuer bis Jahresende: ${mio(c)}<br>Anteil Last bei den Bürgern: ${nf0.format(loss / (loss + c) * 100)} %`;
+    s += `<rect x="${X(yr)}" y="${T}" width="${X(yr + 1) - X(yr)}" height="${H - T - B}" fill="transparent" data-tip="${tip.replace(/"/g, "&quot;")}"/>`;
+  }
+  s += `</svg>`;
+  box.innerHTML = s;
+  $("tlSub").textContent = `Wertverlust ab Baubeginn ${state.bau}, Gewerbesteuer ab ${op} jährlich über ${state.years} Jahre (Annahme)`;
 }
 
 /* =====================================================================
@@ -1076,6 +1274,12 @@ function downloadCsv(){
   rows.push([q("Zeitraum Jahre"), state.years]);
   rows.push([q("Gewerbesteuer gesamt €"), csvNum(gstTotal())]);
   rows.push([q("Gesamtwert vor Bau €"), csvNum(totalValue())]);
+  rows.push([q("Baubeginn"), state.bau]);
+  rows.push([q("Inbetriebnahme / erste Gewerbesteuer"), opStart()]);
+  rows.push([q("Wertverlust in % der Gewerbesteuer gesamt"), gstTotal() > 0 ? csvNum(calcAt(state.loss).loss / gstTotal() * 100, 1) : ""]);
+  rows.push([q("Hausverkäufe % pro Jahr (Annahme)"), csvNum(state.sale, 1)]);
+  rows.push([q("Grunderwerbsteuer %"), csvNum(state.grest, 1)]);
+  rows.push([q("Entgangene Grunderwerbsteuer € (gewählte Stufe)"), csvNum(grestLost(calcAt(state.loss).loss))]);
   rows.push([]);
   rows.push(["Wertverlust %", ...SEGMENTS.map(s => `Verlust ${s.name} €`), "Gesamtverlust €", "Restwert €", "Ø Verlust pro Objekt €", "Entspricht Jahren Gewerbesteuer", "Ihre Wahl"].map(q));
   stageList().forEach(p => {
@@ -1113,7 +1317,10 @@ function renderFooter(cur){
     `\nRestwert                    = ${eur(cur.rest)}` +
     `\nØ Verlust je Objekt         = ${eur(state.n ? cur.loss / state.n : 0)}` +
     `\n\nGewerbesteuer ${nf1.format(state.gst)} Mio. € × ${state.years} Jahre = <b>${eur(g)}</b> (Annahme)` +
-    (state.gst > 0 ? `\nWertverlust ÷ Gewerbesteuer pro Jahr = <b>${nf1.format(cur.loss / (state.gst * 1e6))} Jahre</b>` : "");
+    (state.gst > 0 ? `\nWertverlust ÷ Gewerbesteuer pro Jahr = <b>${nf1.format(cur.loss / (state.gst * 1e6))} Jahre</b>` : "") +
+    (g > 0 ? `\nWertverlust ÷ Gewerbesteuer gesamt = <b>${nf0.format(cur.loss / g * 100)} %</b>` : "") +
+    `\n\nZeitachse: Baubeginn ${state.bau}, Inbetriebnahme ${opStart()}, Gewerbesteuer ${opStart()}–${opStart() + state.years - 1}` +
+    `\nGrunderwerbsteuer: ${nf0.format(state.n)} × ${nf1.format(state.sale)} % × ${state.dauer + state.years} Jahre × ${eur(state.n ? cur.loss / state.n : 0)} × ${nf1.format(state.grest)} % = <b>${eur(grestLost(cur.loss))}</b>`;
 }
 
 /* =====================================================================
@@ -1176,7 +1383,7 @@ function init(){
   renderPresets();
   renderSegs();
   // Schnellwahl Wertverlust
-  document.querySelectorAll(".loss-chips").forEach(el => el.innerHTML = STAGES.map(v => `<button class="chip" data-v="${v}">${v} %</button>`).join(""));
+  document.querySelectorAll(".loss-chips").forEach(el => el.innerHTML = LOSS_CHIPS.map(v => `<button class="chip" data-v="${v}">${v} %</button>`).join(""));
   document.querySelectorAll(".gst-chips").forEach(el => el.innerHTML = GST_OPTIONS.map(o =>
     `<button class="chip gst big" data-gst="${o.v}">${nf1.format(o.v)} Mio. €<span class="cs">${o.sub}</span></button>`).join(""));
   document.querySelectorAll(".loss-chips .chip").forEach(c => c.addEventListener("click", () => { state.loss = +c.dataset.v; syncInputs(); update(); }));
@@ -1187,6 +1394,10 @@ function init(){
   bindPair("gstRange", "gstNum", "gst", { min:0, max:20, step:0.1 });
   bindPair("yrsRange", "yrsNum", "years", { min:1, max:60 });
   bindPair("snR", "snN", "n", { min:10, max:1000 });
+  bindPair("bauR", "bauN", "bau", { min:2026, max:2035 });
+  bindPair("dauerR", "dauerN", "dauer", { min:1, max:6 });
+  bindPair("saleR", "saleN", "sale", { min:0, max:20, step:0.5 });
+  bindPair("grestR", "grestN", "grest", { min:0, max:10, step:0.5 });
   bindPair("slR", "slN", "loss", { min:0, max:35 });
   bindPair("sgR", "sgN", "gst", { min:0, max:20, step:0.1 });
   bindPair("syR", "syN", "years", { min:1, max:60 });
@@ -1225,7 +1436,7 @@ function init(){
 
   $("today").textContent = new Date().toLocaleDateString("de-DE", { month:"long", year:"numeric" });
   initTooltip();
-  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(renderBarChart, 120); });
+  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { renderBarChart(); update(); }, 120); });
   syncInputs(); update(true);
 
   let seen = false;
