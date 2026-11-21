@@ -129,6 +129,21 @@
     .vtog button{padding:8px 10px;font-size:13px}
   }
 
+  /* ============ Symbole (dezente Linien-Icons) ============ */
+  .ic{display:inline-flex;width:1.15em;height:1.15em;vertical-align:-.2em;margin-right:.35em;flex:0 0 auto}
+  .ic svg{width:100%;height:100%;display:block}
+  .vs-ic{display:flex;justify-content:center;margin-bottom:6px}
+  .vs-ic .ic{width:44px;height:44px;margin:0;opacity:.9}
+  .vs-box.city .vs-ic{color:#232826} .vs-box.loss .vs-ic{color:var(--rot)}
+  .fact .ic{display:block;width:22px;height:22px;margin:0 0 6px;color:var(--slate-500)}
+  .fact.r .ic{color:var(--rot)}
+  .share-ic{display:inline-flex;width:30px;height:30px;color:var(--rot);vertical-align:-6px;margin-right:6px}
+  .ctl-head label .ic{color:var(--slate-500)}
+  .kpi .kl .ic{color:var(--kc)}
+  .nb{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin-top:6px}
+  .nb span{display:inline-flex;align-items:center;gap:2px;background:var(--navy-soft);border-radius:99px;padding:3px 10px;font-weight:700;color:var(--slate-600)}
+  .nb .ic{color:var(--rot)}
+
   /* ============ Presets ============ */
   .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 22px}
   .preset{position:relative;text-align:left;background:#fff;border:1.5px solid var(--slate-200);border-radius:var(--radius);
@@ -420,7 +435,7 @@
 <header class="kopf">
   <h1><span class="r">GASKRAFTWERK</span> <span class="g">SCHLÜCHTERN</span></h1>
   <div class="trenn"></div>
-  <h2>Immobilienwerte rund um den Standort „Am Reitstück“</h2>
+  <h2>Immobilienwerte im Luftkurort Schlüchtern inkl. Elm</h2>
 </header>
 <nav class="viewbar" aria-label="Navigation"><div class="wrap">
   <div class="vtog" role="group" aria-label="Ansicht wählen">
@@ -441,12 +456,14 @@
     <p class="s-intro" id="sIntro"></p>
     <div class="vs">
       <div class="vs-box city">
+        <div class="vs-ic"><i class="ic " data-i="townhall" aria-hidden="true"></i></div>
         <div class="vs-lbl">Die Stadt nimmt ein</div>
         <div class="vs-big" id="cGstV">–</div>
         <div class="vs-sub" id="cGstSub"></div>
       </div>
       <div class="vs-mid">vs.</div>
       <div class="vs-box loss">
+        <div class="vs-ic"><i class="ic " data-i="houseDown" aria-hidden="true"></i></div>
         <div class="vs-lbl">Die Bürger verlieren</div>
         <div class="vs-big" id="cLossV">–</div>
         <div class="vs-sub" id="cLossSub"></div>
@@ -462,46 +479,48 @@
     <!-- Zeitachse: wer trägt wann die Last? -->
     <div class="tl">
       <div class="tl-head">
-        <div><h3>Wer trägt wann die Last?</h3><div class="small muted" id="tlSub"></div></div>
+        <div><h3><i class="ic " data-i="clock" aria-hidden="true"></i>Wer trägt wann die Last?</h3><div class="small muted" id="tlSub"></div></div>
         <div class="legend"><span><i style="background:var(--rot)"></i>Wertverlust der Bürger</span><span><i style="background:#232826"></i>Gewerbesteuer der Stadt, aufsummiert</span><span><i style="background:repeating-linear-gradient(45deg,#f4b9b3 0 3px,#fdeee9 3px 6px)"></i>Last liegt bei den Bürgern</span></div>
       </div>
       <div id="timeline"></div>
     </div>
 
     <div class="s-facts">
-      <div class="fact r"><b id="fPerHouse">–</b>Verlust je Haus, ab Baubeginn</div>
-      <div class="fact"><b id="fPerYear">–</b>Gewerbesteuer pro Jahr, frühestens ab Inbetriebnahme</div>
-      <div class="fact"><b id="cYears">–</b><span id="cYearsTxt"></span></div>
-      <div class="fact r"><b id="fGrest">–</b><span id="fGrestTxt"></span></div>
+      <div class="fact r"><i class="ic " data-i="houseDown" aria-hidden="true"></i><b id="fPerHouse">–</b>Verlust je Haus, ab Baubeginn</div>
+      <div class="fact"><i class="ic " data-i="coins" aria-hidden="true"></i><b id="fPerYear">–</b>Gewerbesteuer pro Jahr, frühestens ab Inbetriebnahme</div>
+      <div class="fact"><i class="ic " data-i="hourglass" aria-hidden="true"></i><b id="cYears">–</b><span id="cYearsTxt"></span></div>
+      <div class="fact r"><i class="ic " data-i="tag" aria-hidden="true"></i><b id="fGrest">–</b><span id="fGrestTxt"></span></div>
     </div>
 
     <!-- Die wichtigsten Regler direkt in der einfachen Ansicht -->
     <div class="s-ctl">
       <div class="ctl">
-        <div class="ctl-head"><label for="snR">Betroffene Häuser</label><span class="hint">10 – 1.000</span></div>
+        <div class="ctl-head"><label for="snR"><i class="ic " data-i="house" aria-hidden="true"></i>Betroffene Häuser</label><span class="hint">10 – 1.000</span></div>
         <div class="row"><input type="range" id="snR" min="10" max="1000" step="1" aria-label="Anzahl Häuser">
           <div class="field"><input id="snN" inputmode="numeric" class="w-s" aria-label="Anzahl Häuser (Zahl)"><span>Häuser</span></div></div>
       </div>
       <div class="ctl">
-        <div class="ctl-head"><label for="slR">Wertverlust</label><span class="verdict"></span></div>
+        <div class="ctl-head"><label for="slR"><i class="ic " data-i="trendDown" aria-hidden="true"></i>Wertverlust</label><span class="verdict"></span></div>
         <div class="row"><div style="flex:1;min-width:0"><input type="range" class="r-loss" id="slR" min="0" max="35" step="1" aria-label="Wertverlust in Prozent" style="width:100%">
           <div class="realism"><span class="lo">gering</span><span class="zone">realistisch 6–14 %</span><span class="hi">unwahrscheinlich hoch</span></div></div>
           <div class="field"><input id="slN" inputmode="numeric" class="w-s" aria-label="Wertverlust (Zahl)"><span>%</span></div></div>
         <div class="chips loss-chips"></div>
       </div>
       <div class="ctl">
-        <div class="ctl-head"><label for="sgR">Gewerbesteuer pro Jahr</label><span class="hint">Annahme</span></div>
+        <div class="ctl-head"><label for="sgR"><i class="ic " data-i="coins" aria-hidden="true"></i>Gewerbesteuer pro Jahr</label><span class="hint">Annahme</span></div>
         <div class="row"><input type="range" class="r-gst" id="sgR" min="0" max="6" step="0.1" aria-label="Gewerbesteuer in Mio. Euro pro Jahr">
           <div class="field"><input id="sgN" inputmode="decimal" class="w-s" aria-label="Gewerbesteuer (Zahl)"><span>Mio. €</span></div></div>
         <div class="chips gst-chips"></div>
       </div>
       <div class="ctl">
-        <div class="ctl-head"><label for="syR">Zeitraum</label><span class="hint">Jahre Gewerbesteuer</span></div>
+        <div class="ctl-head"><label for="syR"><i class="ic " data-i="calendar" aria-hidden="true"></i>Zeitraum</label><span class="hint">Jahre Gewerbesteuer</span></div>
         <div class="row"><input type="range" class="r-gst" id="syR" min="5" max="40" step="1" aria-label="Zeitraum in Jahren">
           <div class="field"><input id="syN" inputmode="numeric" class="w-s" aria-label="Zeitraum (Zahl)"><span>Jahre</span></div></div>
       </div>
     </div>
     <p class="small muted" style="margin:12px 0 0;text-align:center" id="sNote">Häuser mit üblicher Wertverteilung (Ø <span id="sAvg"></span>). Gewerbesteuer: Betreiber unbekannt, Einnahmen unbelegt.</p>
+    <div class="small muted" style="text-align:center;margin-top:10px"><i class="ic " data-i="info" aria-hidden="true"></i><b>Nicht berücksichtigt</b>, die tatsächliche Last der Bürger dürfte also höher liegen:
+      <div class="nb"><span><i class="ic " data-i="key" aria-hidden="true"></i>geringere Mieteinnahmen</span><span><i class="ic " data-i="bed" aria-hidden="true"></i>Einbußen bei Übernachtungen und Tourismus</span></div></div>
     <div class="s-actions">
       <button class="btn primary" id="toDetail">Detaillierte Ansicht: Szenarien, Wertklassen, Diagramme ↓</button>
       <button class="btn ghost" id="sReset">↺ Startwerte</button>
@@ -600,10 +619,10 @@
 
       <!-- KPI-Karten -->
       <div class="kpis">
-        <div class="card kpi" style="--kc:var(--keep-bar)"><div class="kl">Gesamtwert vor Bau</div><div class="kv" id="kTotal">–</div><div class="ks" id="kTotalS"></div></div>
-        <div class="card kpi loss" style="--kc:var(--loss)"><div class="kl">Absoluter Gesamtverlust</div><div class="kv" id="kLoss">–</div><div class="ks" id="kLossS"></div></div>
-        <div class="card kpi" style="--kc:var(--navy)"><div class="kl">Verbleibender Gesamtwert</div><div class="kv" id="kRest">–</div><div class="ks" id="kRestS"></div></div>
-        <div class="card kpi" style="--kc:var(--amber)"><div class="kl">Ø Verlust pro Objekt</div><div class="kv" id="kAvg">–</div><div class="ks">je Haushalt / Immobilie</div></div>
+        <div class="card kpi" style="--kc:var(--keep-bar)"><div class="kl"><i class="ic " data-i="house" aria-hidden="true"></i>Gesamtwert vor Bau</div><div class="kv" id="kTotal">–</div><div class="ks" id="kTotalS"></div></div>
+        <div class="card kpi loss" style="--kc:var(--loss)"><div class="kl"><i class="ic " data-i="trendDown" aria-hidden="true"></i>Absoluter Gesamtverlust</div><div class="kv" id="kLoss">–</div><div class="ks" id="kLossS"></div></div>
+        <div class="card kpi" style="--kc:var(--navy)"><div class="kl"><i class="ic " data-i="house" aria-hidden="true"></i>Verbleibender Gesamtwert</div><div class="kv" id="kRest">–</div><div class="ks" id="kRestS"></div></div>
+        <div class="card kpi" style="--kc:var(--amber)"><div class="kl"><i class="ic " data-i="houseDown" aria-hidden="true"></i>Ø Verlust pro Objekt</div><div class="kv" id="kAvg">–</div><div class="ks">je Haushalt / Immobilie</div></div>
       </div>
 
       <!-- Diagramme -->
@@ -652,6 +671,7 @@
           <li>Grunderwerbsteuer: Satz in Hessen 6 % des Kaufpreises (geht an das Land). Entgangene Steuer = Häuser × Verkaufsquote × Jahre × Wertverlust je Haus × Steuersatz. Die Grundsteuer ist nicht betroffen, weil Hessen sie seit 2025 nach Fläche und Lage berechnet, nicht nach dem Marktwert.</li>
           <li>Studienlage: Eichholtz, Kok, Langen, van Vulpen u. a. (2023, Journal of Real Estate Finance and Economics) werten Hausverkäufe in den Niederlanden von 1985 bis 2015 aus und finden negative Preiseffekte im Umfeld neu eröffneter Gaskraftwerke. Davis (2011, Review of Economics and Statistics) findet in den USA im Umkreis von rund 3 km um neue Kraftwerke 3–7 % niedrigere Hauswerte und Mieten, mit Hinweisen auf stärkere Effekte innerhalb von 1,6 km und bei großen Anlagen.</li>
           <li>Warum 10 % als Startwert: Die Studien messen Durchschnitte über viele, oft bereits industriell geprägte Standorte. Schlüchtern hat bisher keine nennenswerte Industrie, wirbt als Luftkurort, und das <span class="gkw">Gaskraftwerk</span> wäre überdurchschnittlich groß und läge erhöht am Stadtrand. Deshalb setzt die BI den Effekt oberhalb der Studienmittel an. Als realistisch gilt hier ein Bereich von 6 bis 14 %; Werte außerhalb sind im Regler blasser dargestellt.</li>
+          <li><b>Nicht berücksichtigt</b> sind weitere Folgen, die die Last der Bürger noch erhöhen würden: geringere Mieteinnahmen für Vermieter (Davis 2011 fand auch bei Mieten Rückgänge) sowie Einbußen bei tourismusnahen Einnahmen wie Übernachtungen, Gastronomie und Kurbetrieb.</li>
           <li>Das Positionspapier der BI (Stand 11.11.2026) beschreibt einen „spürbaren Wertverlust von Wohneigentum und Grundstücken“ durch einen Industriekomplex dieser Größe im Sicht- und Hörfeld.</li>
         </ul>
       </div>
@@ -807,6 +827,30 @@ const PRESETS = [
   { id:"worst",  title:"Worst Case (maximaler Abschlag)",
     desc:"350 Häuser, hohe Immobilienwerte, Abschlag oberhalb des realistischen Bereichs", n:350, shares:[20,50,30], avgs:[250000,450000,900000], loss:20 },
 ];
+
+/** Dezente Linien-Symbole (24×24, Strichfarbe = Textfarbe). Kraftwerk nach BI-Vorgabe: schwarz mit Rot, 3 Schornsteine. */
+const SV = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICONS = {
+  house:     SV('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/><path d="M10 21v-6h4v6"/>'),
+  houseDown: SV('<path d="M2 10 10 3.5l8 6.5"/><path d="M4 8.5V20h12V8.5"/><path d="M8.5 20v-5h3v5"/><path d="M21 12v8"/><path d="m18.5 17.5 2.5 2.5 2.5-2.5"/>'),
+  townhall:  SV('<path d="M3 21h18"/><path d="M5 21V10h14v11"/><path d="M3.5 10 12 4l8.5 6"/><path d="M12 4V1.5"/><path d="M10 21v-4h4v4"/><path d="M8 13.5v1M12 13.5v1M16 13.5v1"/>'),
+  coins:     SV('<ellipse cx="9" cy="6.5" rx="6" ry="2.8"/><path d="M3 6.5v4c0 1.5 2.7 2.8 6 2.8s6-1.3 6-2.8v-4"/><path d="M9 13.3v3.2c0 1.5 2.7 2.8 6 2.8s6-1.3 6-2.8v-4c0-1.5-2.7-2.8-6-2.8"/>'),
+  trendDown: SV('<path d="m3 7 6 6 4-4 8 8"/><path d="M21 11v6h-6"/>'),
+  calendar:  SV('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+  clock:     SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  hourglass: SV('<path d="M6 3h12M6 21h12"/><path d="M7 3v2.5a5 5 0 0 0 10 0V3"/><path d="M7 21v-2.5a5 5 0 0 1 10 0V21"/>'),
+  tag:       SV('<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
+  key:       SV('<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3M16 7l3 3M13.5 9.5l2 2"/>'),
+  bed:       SV('<path d="M2 19V6M2 15h20v4M22 15v-3a3 3 0 0 0-3-3h-8v6"/><circle cx="6.5" cy="11.5" r="2"/>'),
+  info:      SV('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>'),
+  scale:     SV('<path d="M12 3v18M7 21h10M4 7h16"/><path d="M4 7 1.5 13a2.5 2.5 0 0 0 5 0z"/><path d="M20 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>'),
+};
+/** Kleines Kraftwerk für die Zeitachse (schwarz/rot, 3 Schornsteine) */
+const PLANT = (x, y, w) => `<g transform="translate(${x} ${y}) scale(${w / 24})">
+  <rect x="2" y="13" width="20" height="9" fill="#232826"/><rect x="5" y="3" width="3" height="10" fill="#232826"/>
+  <rect x="10.5" y="1" width="3" height="12" fill="#232826"/><rect x="16" y="3" width="3" height="10" fill="#232826"/>
+  <rect x="5" y="5" width="3" height="1.6" fill="#CD281E"/><rect x="10.5" y="3" width="3" height="1.6" fill="#CD281E"/><rect x="16" y="5" width="3" height="1.6" fill="#CD281E"/>
+  <rect x="2" y="16" width="20" height="1.6" fill="#CD281E"/></g>`;
 
 /* =====================================================================
    2. ZUSTAND
@@ -1065,7 +1109,7 @@ function renderCompare(cur){
   // Große Prozentzahl
   if (share !== null){
     $("shareBig").innerHTML = `${nf0.format(share)}<small>%</small>`;
-    $("shareTxt").innerHTML = `So viel, gemessen an der Gewerbesteuer der Stadt, verlieren die Bürger an Hauswert.` +
+    $("shareTxt").innerHTML = `<span class="share-ic">${ICONS.scale}</span>So viel, gemessen an der Gewerbesteuer der Stadt, verlieren die Bürger an Hauswert.` +
       `<span class="sub">Für jeden Euro, den die Stadt in ${state.years} Jahren einnimmt, verlieren die Eigentümer ${nf0.format(share)} Cent. ` +
       `Bis ${op - 1} tragen die Bürger 100 % der Last, denn bis dahin nimmt die Stadt noch nichts ein.</span>`;
   } else {
@@ -1115,6 +1159,9 @@ function renderTimeline(cur){
   // Bauphase markieren
   s += `<rect x="${X(state.bau)}" y="${T}" width="${X(op) - X(state.bau)}" height="${H - T - B}" fill="#232826" opacity=".05"/>`;
   s += `<text x="${(X(state.bau) + X(op)) / 2}" y="${T - 8}" text-anchor="middle" font-size="12" font-weight="800" fill="#5b6560">${X(op) - X(state.bau) > 50 ? "Bauphase" : "Bau"}</text>`;
+  // Kraftwerkssymbol in der Spalte der Inbetriebnahme
+  { const cw = X(op + 1) - X(op), sz = Math.min(26, Math.max(16, cw * 1.4));
+    s += PLANT(X(op) + cw / 2 - sz / 2, Y(0) - sz - 3, sz); }
   // Linie Wertverlust (Stufe bei Baubeginn)
   s += `<path d="M${X(y0)} ${Y(0)} H${X(state.bau)} V${Y(loss)} H${X(y1 + 1)}" fill="none" stroke="#CD281E" stroke-width="3.5" stroke-linejoin="round"/>`;
   // Treppe Gewerbesteuer (aufsummiert)
@@ -1129,7 +1176,7 @@ function renderTimeline(cur){
     const yr = op + be - 1, x = X(yr + 1);
     s += `<line x1="${x}" x2="${x}" y1="${T}" y2="${H - B}" stroke="#232826" stroke-dasharray="4 4"/>`;
     // Zweizeilige Beschriftung (Formulierung nach Vorgabe der BI)
-    const lines = small ? [`Bis Ende ${yr} erhofft`, `die Stadt Einnahmen`, `in Höhe des Wertverlusts`]
+    const lines = small ? [`Bis Ende ${yr} erhofft`, `die Stadt Einnahmen`, `in Höhe des Verlusts`]
                        : [`Bis Ende ${yr} erhofft sich die Stadt die Einnahmen,`, `die den Hausbesitzern mit Baubeginn an Wert verloren gingen`];
     // Text auf die Seite mit mehr Platz setzen
     const right = (x - L) < (W - L - R) / 2;
@@ -1260,7 +1307,7 @@ function csvNum(v, d = 0){ return v.toLocaleString("de-DE", { minimumFractionDig
 function downloadCsv(){
   const rows = [];
   const q = s => `"${String(s).replace(/"/g, '""')}"`;
-  rows.push([q("Immobilienwert-Simulator Am Reitstück – BI Lebenswertes Schlüchtern"), q("Stand " + new Date().toLocaleDateString("de-DE"))]);
+  rows.push([q("Immobilienwert-Simulator Luftkurort Schlüchtern inkl. Elm – BI Lebenswertes Schlüchtern"), q("Stand " + new Date().toLocaleDateString("de-DE"))]);
   rows.push([]);
   rows.push([q("Parameter"), q("Wert")]);
   rows.push([q("Szenario"), q(state.preset ? PRESETS.find(p => p.id === state.preset).title : "Individuell")]);
@@ -1289,6 +1336,7 @@ function downloadCsv(){
   });
   rows.push([]);
   rows.push([q("Hinweis: Modellrechnung, kein Wertgutachten. Gewerbesteuer ist eine unbelegte Annahme; Betreiber unbekannt.")]);
+  rows.push([q("Nicht berücksichtigt: geringere Mieteinnahmen sowie Einbußen bei tourismusnahen Einnahmen (z. B. Übernachtungen).")]);
   const csv = "﻿" + rows.map(r => r.join(";")).join("\r\n");
   const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
   const a = document.createElement("a");
@@ -1380,6 +1428,7 @@ function setView(v){
    START
    ===================================================================== */
 function init(){
+  document.querySelectorAll("[data-i]").forEach(el => el.innerHTML = ICONS[el.dataset.i] || "");
   renderPresets();
   renderSegs();
   // Schnellwahl Wertverlust
