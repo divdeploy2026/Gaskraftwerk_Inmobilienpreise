@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Immobilienwert-Simulator</title>
+<meta name="description" content="Simulation möglicher Immobilienwertverluste im Umfeld des geplanten Gaskraftwerks Am Reitstück, Schlüchtern / Elm – im Vergleich zu den angenommenen Gewerbesteuereinnahmen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!--
+  Immobilienwert-Simulator „Am Reitstück“ – Bürgerinitiative Lebenswertes Schlüchtern
+  ------------------------------------------------------------------------------------
+  Eine einzige, sofort lauffähige Datei: HTML + CSS + Vanilla-JavaScript.
+  Keine externen Bibliotheken nötig (Diagramme werden als SVG selbst gezeichnet),
+  nur die Schrift „Inter“ wird – falls online – von Google Fonts geladen.
+
+  Aufbau des Skripts (unten):
+    1. Konstanten & Presets          5. Diagramme (SVG)
+    2. Zustand (state)               6. Stufentabelle
+    3. Rechenkern                    7. Export (CSV / Druck)
+    4. Formatierung & UI-Bindung     8. Onboarding-Overlay
+-->
+<style>
+  /* ============ Design-Tokens ============ */
+  :root{
+    /* Palette wie im CO₂-Simulator (divdeploy2026.github.io/CO2_compare) */
+    --gruen:#1E5A2B; --hellgruen:#6DB33F; --zartgruen:#D7F0C8; --rot:#CD281E; --rotdunkel:#A3211A;
+    --orange:#E8641B; --orangehell:#F6A04D;
+    --slate-950:#1a1e1c; --slate-900:#232826; --slate-700:#3a413e; --slate-600:#4d5651;
+    --slate-500:#5b6560; --slate-400:#9aa39e; --slate-300:#cfd6ce; --slate-200:#dde5dc;
+    --slate-100:#f6f4f2; --slate-50:#faf8f6;
+    --navy:#232826; --navy-2:#3a413e; --navy-soft:#f2eeeb;      /* „ui“-Dunkelgrau für Bedienelemente */
+    --loss:#CD281E; --loss-soft:#fdeee9; --amber:#E8641B; --amber-soft:#fff3d6;
+    --keep:#1E5A2B; --keep-bar:#6DB33F; --keep-soft:#e9f5e1;
+    --gkw-red:#CD281E;            /* Wort „Gaskraftwerk“ immer in Rot (BI-Vorgabe) */
+    --bi-green:#1E5A2B; --bi-green-light:#6DB33F;
+    --seg1:#F6A04D; --seg2:#E8641B; --seg3:#A3211A;   /* Preisklassen: hell → dunkel */
+    --radius:16px;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(60,30,20,.07);
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:light}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+       background:var(--slate-100);color:var(--slate-900);font-size:15px;line-height:1.5;
+       -webkit-font-smoothing:antialiased}
+  .gkw{color:var(--gkw-red);font-weight:800}
+  .wrap{max-width:1260px;margin:0 auto;padding:0 16px}
+  button{font:inherit;cursor:pointer}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ============ Kopfleiste (wie CO₂-Simulator: weiß, zentriert, hellgrüne Kante) ============ */
+  header.kopf{background:#fff;border-bottom:5px solid var(--hellgruen);text-align:center;padding:18px 16px 14px}
+  .kopf h1{margin:0;font-weight:900;font-size:clamp(22px,4.2vw,40px);letter-spacing:.02em;line-height:1.1}
+  .kopf h1 .r{color:var(--rot)} .kopf h1 .g{color:var(--gruen)}
+  .kopf .trenn{width:min(560px,80%);height:2px;background:var(--gruen);margin:10px auto}
+  .kopf h2{margin:0;font-weight:800;font-size:clamp(16px,2.4vw,24px)}
+  /* Sticky-Leiste mit Sprungmarken, Druck & Hilfe */
+  .viewbar{position:sticky;top:0;z-index:30;background:rgba(243,246,242,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid var(--slate-200)}
+  .viewbar .wrap{display:flex;justify-content:center;align-items:center;gap:8px;padding-top:8px;padding-bottom:8px}
+  .vseg{display:inline-flex;background:var(--navy-soft);border-radius:12px;padding:4px;gap:4px;overflow-x:auto;scrollbar-width:none;min-width:0}
+  .vseg a{border-radius:9px;padding:7px 13px;font-size:13.5px;font-weight:700;color:var(--slate-500);text-decoration:none;white-space:nowrap}
+  .vseg a:hover{background:#fff;color:var(--slate-900);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  .icon-btn{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2px solid var(--navy);background:#fff;color:var(--navy);
+            font-weight:900;font-size:18px;line-height:1;display:grid;place-items:center;transition:.2s}
+  .icon-btn:hover,.icon-btn:focus-visible{background:var(--navy);color:#fff}
+  .icon-btn svg{width:17px;height:17px}
+  section[id]{scroll-margin-top:70px}
+
+  /* ============ Allgemeine Karten ============ */
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--slate-200)}
+  .card-pad{padding:18px 20px}
+  h2.sec{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--slate-500);margin:0 0 10px;font-weight:800}
+  h3{margin:0;font-size:16px;font-weight:800;color:var(--slate-900)}
+  .muted{color:var(--slate-500)}
+  .small{font-size:13px}
+
+  /* ============ Intro ============ */
+  .intro{margin:22px 0 8px}
+  .intro h1{font-size:clamp(22px,3.4vw,32px);line-height:1.15;margin:0 0 6px;font-weight:900;color:var(--slate-900)}
+  .intro p{margin:0;max-width:880px;color:var(--slate-600)}
+
+  /* ============ Einfache Ansicht (Gegenüberstellung oben) ============ */
+  .simple{margin:22px 0 22px;padding:24px 24px 20px}
+  .s-q{font-weight:900;font-size:clamp(20px,2.8vw,28px);line-height:1.2;margin:0 0 18px;text-align:center}
+  .vs{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch}
+  .vs-box{border-radius:14px;padding:18px 18px 16px;text-align:center;border:2px solid var(--vc);background:var(--vbg)}
+  .vs-box.city{--vc:#232826;--vbg:#f2eeeb}
+  .vs-box.loss{--vc:var(--rot);--vbg:var(--loss-soft)}
+  .vs-lbl{font-weight:900;font-size:clamp(15px,1.8vw,19px);text-transform:uppercase;letter-spacing:.06em;color:var(--vc)}
+  .vs-big{font-weight:900;font-size:clamp(40px,6.4vw,72px);line-height:1;letter-spacing:-.03em;color:var(--vc);margin:10px 0 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .vs-big small{font-size:.38em;letter-spacing:0;margin-left:6px}
+  .vs-sub{font-size:13.5px;color:var(--slate-600);line-height:1.4}
+  .vs-sub b{color:var(--slate-900)}
+  .vs-mid{align-self:center;font-weight:900;font-size:20px;color:var(--slate-400)}
+  .s-bars{margin:16px 0 4px}
+  .s-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+  .fact{background:var(--navy-soft);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--slate-600);line-height:1.35}
+  .fact b{display:block;font-size:20px;font-weight:900;color:var(--slate-900);font-variant-numeric:tabular-nums;margin-bottom:2px}
+  .fact.r b{color:var(--rot)}
+  .s-ctl{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;margin-top:18px;border-top:1px solid var(--slate-200);padding-top:6px}
+  .s-ctl .ctl{border-top:0;padding:12px 0 4px}
+  .s-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+  .vtog{display:inline-flex;background:var(--navy-soft);border-radius:12px;padding:4px;gap:4px}
+  .vtog button{border:none;background:transparent;border-radius:9px;padding:8px 16px;font-size:14px;font-weight:700;color:var(--slate-500);white-space:nowrap}
+  .vtog button.on{background:#fff;color:var(--slate-900);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  body.simple-view #detail{display:none}
+  #detail{animation:fadeIn .35s ease}
+  @media (max-width:760px){
+    .vs{grid-template-columns:1fr}
+    .vs-mid{justify-self:center;margin:-4px 0}
+    .s-facts{grid-template-columns:1fr}
+    .s-ctl{grid-template-columns:1fr}
+    .simple{padding:18px 14px 16px}
+    .vtog button{padding:8px 10px;font-size:13px}
+  }
+
+  /* ============ Presets ============ */
+  .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 22px}
+  .preset{position:relative;text-align:left;background:#fff;border:1.5px solid var(--slate-200);border-radius:var(--radius);
+          padding:14px 14px 12px;box-shadow:var(--shadow);transition:transform .2s,border-color .2s,box-shadow .2s;color:inherit}
+  .preset:hover{transform:translateY(-2px);border-color:var(--orange)}
+  .preset.active{border-color:var(--rot);box-shadow:0 0 0 3px rgba(205,40,30,.12),var(--shadow);background:linear-gradient(180deg,#fff, var(--navy-soft))}
+  .preset .pn{font-size:11px;font-weight:800;color:var(--slate-500);letter-spacing:.08em}
+  .preset .pt{font-weight:800;font-size:14.5px;line-height:1.25;margin:3px 0 8px;color:var(--slate-900)}
+  .preset .pd{font-size:12.5px;color:var(--slate-600);line-height:1.4}
+  .preset .pl{display:inline-block;margin-top:8px;font-size:12px;font-weight:800;color:var(--loss);background:var(--loss-soft);
+              border-radius:999px;padding:2px 9px}
+  .preset .check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--rot);color:#fff;
+                 display:none;place-items:center;font-size:12px}
+  .preset.active .check{display:grid}
+  .custom-note{display:none;font-size:13px;color:var(--amber);font-weight:700;margin:-12px 0 16px}
+  .custom-note.on{display:block}
+
+  /* ============ Hauptlayout ============ */
+  .layout{display:grid;grid-template-columns:390px 1fr;gap:20px;align-items:start;margin-bottom:28px}
+  .panel{position:sticky;top:70px;max-height:calc(100vh - 150px);overflow:auto;scrollbar-width:thin}
+  .results{display:flex;flex-direction:column;gap:20px;min-width:0}
+
+  /* ============ Regler ============ */
+  .ctl{padding:16px 0;border-top:1px solid var(--slate-200)}
+  .ctl:first-of-type{border-top:0;padding-top:4px}
+  .ctl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+  .ctl-head label{font-weight:700;font-size:14px}
+  .ctl-head .hint{font-size:12px;color:var(--slate-500)}
+  .row{display:flex;align-items:center;gap:10px}
+  .row input[type=range]{flex:1}
+  .field{display:flex;align-items:center;border:1.5px solid var(--slate-300);border-radius:9px;background:#fff;overflow:hidden;
+         transition:border-color .2s}
+  .field:focus-within{border-color:var(--navy-2)}
+  .field input{border:0;outline:0;font:inherit;font-weight:700;width:86px;padding:6px 4px 6px 9px;text-align:right;
+               font-variant-numeric:tabular-nums;color:var(--slate-900);background:transparent}
+  .field input.w-s{width:52px}
+  .field span{padding:0 9px 0 3px;color:var(--slate-500);font-size:13px;font-weight:600}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;height:10px;border-radius:99px;margin:10px 0;outline:none;--fill:50%;--c:var(--navy);
+      background:linear-gradient(90deg,var(--c),var(--c)) 0 0/var(--fill) 100% no-repeat,#e8e4e1}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;
+      border:4px solid var(--c);box-shadow:0 2px 6px rgba(0,0,0,.2);cursor:grab;transition:transform .15s}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--c);box-shadow:0 2px 6px rgba(0,0,0,.2);cursor:grab}
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12);cursor:grabbing}
+  input[type=range]:focus-visible::-webkit-slider-thumb{outline:3px solid var(--orange);outline-offset:2px}
+  input.r-loss{--c:var(--rot);background:linear-gradient(90deg,var(--orangehell),var(--rot)) 0 0/var(--fill) 100% no-repeat,#e8e4e1}
+  input.r-gst{--c:var(--navy)}
+
+  .seg{border:1px solid var(--slate-200);border-radius:11px;padding:10px 12px;margin-top:10px;border-left:5px solid var(--sc)}
+  .seg-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+  .seg-title b{font-size:13.5px}
+  .seg-title span{font-size:12px;color:var(--slate-500)}
+  .seg .sub{font-size:12px;color:var(--slate-500);margin-top:2px}
+  .sumcheck{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:700}
+  .sumbar{flex:1;height:8px;border-radius:4px;overflow:hidden;display:flex;background:var(--slate-200)}
+  .sumbar i{display:block;height:100%;transition:width .3s}
+  .ok{color:var(--keep)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{border:1.5px solid var(--slate-300);background:#fff;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;
+        color:var(--slate-700);transition:.15s}
+  .chip:hover{border-color:var(--navy-2);color:var(--navy)}
+  .chip.on{background:var(--ui,#232826);border-color:#232826;color:#fff}
+  .chip.gst.on{background:var(--navy);border-color:var(--navy)}
+  .chip .cs{display:block;font-size:10.5px;font-weight:600;opacity:.8;line-height:1.2}
+  .chip.big{border-radius:10px;padding:6px 12px;text-align:left}
+
+  .assume{background:var(--amber-soft);border:1px solid #f6d58a;color:#7a4a05;border-radius:9px;padding:8px 10px;font-size:12.5px;margin-top:10px;line-height:1.45}
+
+  /* ============ KPI-Karten ============ */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi{padding:16px 16px 14px;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--kc)}
+  .kpi .kl{font-size:12.5px;font-weight:700;color:var(--slate-500);line-height:1.3}
+  .kpi .kv small{font-size:.5em;font-weight:800;margin-left:4px;letter-spacing:0}
+  .kpi .kv{white-space:nowrap;font-size:clamp(22px,2.3vw,30px);font-weight:900;margin-top:6px;line-height:1.1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .kpi .ks{font-size:12px;color:var(--slate-500);margin-top:4px}
+  .kpi.loss{background:linear-gradient(180deg,#fff 40%,var(--loss-soft))}
+  .kpi.loss .kv{color:var(--loss)}
+  .kv.flash{animation:flash .5s ease}
+  @keyframes flash{0%{opacity:.35;transform:translateY(3px)}100%{opacity:1;transform:none}}
+
+  /* ============ Vergleich Gewerbesteuer ============ */
+  .cmp-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;align-items:center}
+  .cbar{margin:12px 0}
+  .cbar .cl .num{white-space:nowrap}
+  .cbar .cl{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:700;margin-bottom:5px}
+  .cbar .track{height:26px;background:var(--slate-100);border-radius:7px;overflow:hidden}
+  .cbar .fill{height:100%;border-radius:7px;transition:width .45s cubic-bezier(.4,0,.2,1)}
+  .cmp-big{font-size:clamp(34px,5vw,52px);font-weight:900;color:var(--rot);letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .cmp-txt{font-size:14px;color:var(--slate-700);margin-top:8px}
+  .cmp-side{background:var(--slate-50);border:1px solid var(--slate-200);border-radius:12px;padding:16px}
+
+  /* ============ Diagramme ============ */
+  .charts{display:grid;grid-template-columns:1.45fr 1fr;gap:20px}
+  .chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--slate-600)}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  svg text{font-family:inherit}
+  .bar-g rect{transition:opacity .2s}
+  .bar-g:hover rect{opacity:.85}
+  .seg-list{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+  .seg-item{display:grid;grid-template-columns:14px 1fr auto;gap:9px;align-items:center;font-size:13px}
+  .seg-item i{width:14px;height:14px;border-radius:4px}
+  .seg-item .sv{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+  .seg-item .sn{line-height:1.3}
+  .seg-item .sn small{display:block;color:var(--slate-500);font-size:11.5px}
+  .donut-wrap{display:grid;grid-template-columns:1fr;gap:14px;justify-items:center}
+  .donut-wrap .seg-list{width:100%}
+
+  /* ============ Tabelle ============ */
+  .tbl-wrap{overflow-x:auto;margin:0 -4px;padding:0 4px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:660px}
+  th,td{padding:9px 8px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--slate-500);border-bottom:2px solid var(--slate-200);font-weight:800}
+  tbody td{border-bottom:1px solid var(--slate-200)}
+  tbody tr{transition:background .25s}
+  tbody tr:hover{background:var(--slate-50)}
+  td.l{color:var(--loss);font-weight:700}
+  td.k{color:var(--keep);font-weight:700}
+  tr.cur{background:var(--loss-soft)!important;box-shadow:inset 4px 0 0 var(--loss)}
+  tr.cur td{font-weight:800}
+  .tag{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;background:var(--loss);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+
+  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:10px 16px;font-weight:700;font-size:14px;border:1.5px solid var(--navy);transition:.2s}
+  .btn svg{width:17px;height:17px}
+  .btn.primary{background:var(--navy);color:#fff}
+  .btn.primary:hover{background:var(--navy-2)}
+  .btn.ghost{background:#fff;color:var(--navy)}
+  .btn.ghost:hover{background:var(--navy-soft)}
+
+  /* ============ Hinweise / Fußzeile ============ */
+  .notes{font-size:13px;color:var(--slate-600);line-height:1.6}
+  .notes ul{margin:6px 0 0;padding-left:18px}
+  .notes li{margin-bottom:4px}
+
+  /* ============ Tooltip ============ */
+  #tip{position:fixed;z-index:60;pointer-events:none;background:var(--slate-950);color:#fff;font-size:12.5px;line-height:1.45;
+       padding:8px 11px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transition:opacity .12s;max-width:260px}
+  #tip.on{opacity:1}
+  #tip b{font-weight:800}
+
+  /* ============ Onboarding-Overlay ============ */
+  .ob{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;
+      background:rgba(20,40,25,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+      opacity:0;pointer-events:none;transition:opacity .45s ease}
+  .ob.open{opacity:1;pointer-events:auto}
+  .ob-card{width:min(470px,100%);background:#fff;border-radius:20px;padding:22px 22px 18px;position:relative;
+           box-shadow:0 20px 60px rgba(15,23,42,.35);transform:translateY(24px) scale(.96);transition:transform .5s cubic-bezier(.2,.9,.3,1.2)}
+  .ob.open .ob-card{transform:none;animation:float 5s ease-in-out .5s infinite, pulse 2.6s ease-in-out .5s infinite}
+  @keyframes float{0%,100%{translate:0 0}50%{translate:0 -8px}}
+  @keyframes pulse{0%,100%{box-shadow:0 20px 60px rgba(15,23,42,.35),0 0 0 0 rgba(109,179,63,.45)}
+                   50%{box-shadow:0 26px 70px rgba(15,23,42,.38),0 0 0 12px rgba(109,179,63,0)}}
+  .ob-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:0;background:var(--slate-100);color:var(--slate-600);font-size:18px}
+  .ob-kicker{font-size:11.5px;font-weight:800;letter-spacing:.1em;color:var(--rot);text-transform:uppercase}
+  .ob h2{margin:4px 0 0;font-size:21px;font-weight:900;color:var(--slate-900);line-height:1.2}
+  .ob-stage{height:150px;margin:14px 0 12px;border-radius:14px;background:linear-gradient(180deg,#fff,var(--navy-soft));
+            position:relative;overflow:hidden;border:1px solid var(--slate-200)}
+  .ob-step{position:absolute;inset:0;opacity:0;transform:translateX(30px);transition:opacity .4s,transform .4s;display:grid;place-items:center}
+  .ob-step.on{opacity:1;transform:none}
+  .ob-step.prev{transform:translateX(-30px)}
+  .ob-text{min-height:66px;font-size:14.5px;color:var(--slate-700)}
+  .ob-text p{margin:0;display:none}
+  .ob-text p.on{display:block;animation:fadeIn .4s}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .ob-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+  .dots{display:flex;gap:7px}
+  .dots i{width:9px;height:9px;border-radius:50%;background:var(--slate-300);transition:.3s}
+  .dots i.on{background:var(--navy);width:24px;border-radius:5px}
+  .ob-foot .btn{padding:9px 14px}
+
+  /* Mini-Animation Schritt 1: Presets */
+  .demo-presets{display:flex;gap:8px}
+  .demo-presets span{width:52px;height:62px;border-radius:9px;background:#fff;border:2px solid var(--slate-300);display:grid;place-items:center;
+                     font-weight:900;color:var(--slate-400);font-size:15px;animation:pick 5s infinite}
+  .demo-presets span:nth-child(1){animation-delay:0s}.demo-presets span:nth-child(2){animation-delay:1s}
+  .demo-presets span:nth-child(3){animation-delay:2s}.demo-presets span:nth-child(4){animation-delay:3s}
+  .demo-presets span:nth-child(5){animation-delay:4s}
+  @keyframes pick{0%,18%{border-color:var(--navy);color:var(--navy);transform:translateY(-6px);box-shadow:0 8px 16px rgba(35,40,38,.2)}
+                  22%,100%{border-color:var(--slate-300);color:var(--slate-400);transform:none;box-shadow:none}}
+  /* Mini-Animation Schritt 1: Gegenüberstellung */
+  .demo-vs{display:flex;align-items:center;gap:14px}
+  .demo-vs span{width:110px;height:80px;border-radius:12px;display:grid;place-items:center;font-weight:900;font-size:16px;border:2px solid;animation:vsPulse 2.4s ease-in-out infinite}
+  .demo-vs .c{border-color:#232826;color:#232826;background:#f2eeeb}
+  .demo-vs .l{border-color:var(--rot);color:var(--rot);background:var(--loss-soft);animation-delay:1.2s}
+  .demo-vs i{font-style:normal;font-weight:900;color:var(--slate-400)}
+  @keyframes vsPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08);box-shadow:0 8px 18px rgba(0,0,0,.12)}}
+  /* Mini-Animation Schritt 2: Regler */
+  .demo-sliders{width:78%;display:flex;flex-direction:column;gap:16px}
+  .demo-sl{height:6px;border-radius:3px;background:var(--slate-300);position:relative}
+  .demo-sl b{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--c);animation:slide var(--d) ease-in-out infinite alternate}
+  .demo-sl b::after{content:"";position:absolute;right:-9px;top:-6px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--c);box-sizing:border-box}
+  @keyframes slide{from{width:var(--a)}to{width:var(--z)}}
+  /* Mini-Animation Schritt 3: Balken */
+  .demo-bars{display:flex;align-items:flex-end;gap:12px;height:110px}
+  .demo-bars span{width:30px;height:100%;border-radius:5px 5px 0 0;background:var(--keep-bar);position:relative;overflow:hidden}
+  .demo-bars span::before{content:"";position:absolute;left:0;right:0;top:0;background:var(--loss);height:var(--h);animation:grow 2.4s ease-in-out infinite alternate}
+  .demo-bars span:nth-child(3){outline:3px solid var(--navy);outline-offset:2px}
+  @keyframes grow{from{height:4%}to{height:var(--h)}}
+
+  /* ============ Logo, Silhouette & Fußleiste (wie CO₂-Simulator) ============ */
+  body{padding-bottom:64px}
+  .bi-logo{display:flex;justify-content:center;margin:34px 0 0}
+  .bi-logo img{height:120px;width:auto;background:#fff;border-radius:16px;padding:10px 14px;box-shadow:var(--shadow)}
+  .silhouette{margin-top:10px;line-height:0}
+  .silhouette svg{width:100%;height:auto;display:block}
+  .sil-cap{background:var(--gruen);color:var(--zartgruen);text-align:center;font-size:12px;padding:6px 16px 14px;line-height:1.4}
+  .fuss{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:4px solid var(--rot);box-shadow:0 -6px 24px rgba(0,0,0,.08)}
+  .fuss-bar{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:10px 16px;max-width:1260px;margin:0 auto}
+  .fuss-bar .f-sum{font-size:13px;color:var(--slate-500);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fuss-bar .f-sum b{color:var(--slate-900)}
+  .ftoggle{flex:0 0 auto;border:none;background:var(--navy);color:#fff;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px}
+  .fuss-panel{max-height:0;overflow:hidden;transition:max-height .45s ease}
+  .fuss.open .fuss-panel{max-height:72vh;overflow-y:auto}
+  .fuss-inner{max-width:1260px;margin:0 auto;padding:4px 16px 20px;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px}
+  .fuss h4{margin:12px 0 6px;font-size:14px}
+  .formula{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#f6f8f5;border:1px solid var(--slate-200);border-radius:10px;padding:12px;white-space:pre-wrap;overflow-x:auto;line-height:1.6}
+  .formula b{color:var(--rotdunkel)}
+  .srcs{margin:0;padding-left:18px;font-size:13px}
+  .srcs li{margin:6px 0;overflow-wrap:anywhere}
+  @media (max-width:820px){.fuss-inner{grid-template-columns:minmax(0,1fr)}}
+  @media (max-width:560px){.fuss-bar .f-sum{display:none}.fuss-bar{justify-content:center}.ftoggle{width:100%}}
+
+  /* ============ Nur im Druck sichtbar ============ */
+  .print-only{display:none}
+
+  /* ============ Responsiv ============ */
+  @media (max-width:1180px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:1023px){
+    .layout{grid-template-columns:1fr}
+    .panel{position:static;max-height:none}
+    .charts,.cmp-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .presets{grid-template-columns:1fr 1fr;gap:10px}
+    .preset{padding:11px}
+    .preset .pd{display:none}
+    .icon-btn{width:34px;height:34px}
+    .vseg a{padding:7px 9px;font-size:12.5px}
+    .viewbar .print-btn{display:none}
+    .kpis{gap:10px}
+    .kpi{padding:13px 12px}
+    .card-pad{padding:15px 14px}
+    .donut-wrap{grid-template-columns:1fr;justify-items:center}
+    .donut-wrap .seg-list{width:100%}
+    .panel{max-height:none}
+  }
+  @media (max-width:380px){ .presets{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important} }
+
+  /* ============ Druck / PDF ============ */
+  @media print{
+    @page{size:A4;margin:12mm}
+    body{background:#fff;font-size:12px}
+    body.simple-view #detail{display:block!important}
+    .simple .s-ctl,.simple .s-actions,
+    .viewbar,.fuss,.silhouette,.sil-cap,.presets,.custom-note,.panel,.btns,.ob,#tip,.no-print{display:none!important}
+    .print-only{display:block}
+    .layout{display:block}
+    .results{gap:12px}
+    .card{box-shadow:none;break-inside:avoid}
+    .kpis{grid-template-columns:repeat(4,1fr)}
+    .charts{grid-template-columns:1.4fr 1fr}
+    .vs{grid-template-columns:1fr auto 1fr}
+    table{min-width:0;font-size:11px}
+    tr.cur{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= Kopfleiste ================= -->
+<header class="kopf">
+  <h1><span class="r">GASKRAFTWERK</span> <span class="g">SCHLÜCHTERN</span></h1>
+  <div class="trenn"></div>
+  <h2>Immobilienwerte rund um den Standort „Am Reitstück“</h2>
+</header>
+<nav class="viewbar" aria-label="Navigation"><div class="wrap">
+  <div class="vtog" role="group" aria-label="Ansicht wählen">
+    <button data-view="simple" class="on">Einfache Ansicht</button><button data-view="detail">Detaillierte Ansicht</button>
+  </div>
+  <button class="icon-btn print-btn" id="hdrPrint" title="Ansicht drucken / als PDF speichern" aria-label="Drucken">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+  </button>
+  <button class="icon-btn" id="helpBtn" title="Hilfe / Einführung erneut anzeigen" aria-label="Hilfe anzeigen">?</button>
+</div></nav>
+
+<main class="wrap">
+
+  <!-- ================= EINFACHE ANSICHT: Gegenüberstellung Stadt vs. Bürger ================= -->
+  <section class="card simple" id="simple" aria-live="polite">
+    <p class="s-q">Was nimmt die Stadt ein – und was verlieren die Bürger an Wert, wenn das <span class="gkw">Gaskraftwerk</span> kommt?</p>
+    <div class="vs">
+      <div class="vs-box city">
+        <div class="vs-lbl">Die Stadt nimmt ein</div>
+        <div class="vs-big" id="cGstV">–</div>
+        <div class="vs-sub" id="cGstSub"></div>
+      </div>
+      <div class="vs-mid">vs.</div>
+      <div class="vs-box loss">
+        <div class="vs-lbl">Die Bürger verlieren</div>
+        <div class="vs-big" id="cLossV">–</div>
+        <div class="vs-sub" id="cLossSub"></div>
+      </div>
+    </div>
+    <div class="s-bars">
+      <div class="cbar"><div class="cl"><span>Stadt: Gewerbesteuer <span class="muted small">(Annahme, nicht belegt)</span></span></div>
+        <div class="track" data-tip id="cGstT"><div class="fill" id="cGstF" style="background:var(--navy)"></div></div></div>
+      <div class="cbar"><div class="cl"><span>Bürger: Wertverlust ihrer Häuser <span class="muted small">(sofort)</span></span></div>
+        <div class="track" data-tip id="cLossT"><div class="fill" id="cLossF" style="background:var(--loss)"></div></div></div>
+    </div>
+    <div class="s-facts">
+      <div class="fact r"><b id="fPerHouse">–</b>Verlust je Haus, sobald das <span class="gkw">Gaskraftwerk</span> feststeht</div>
+      <div class="fact"><b id="fPerYear">–</b>Gewerbesteuer pro Jahr, frühestens nach Bau und Inbetriebnahme (Baubeginn laut Presse ab 2028)</div>
+      <div class="fact"><b id="cYears">–</b><span id="cYearsTxt"></span></div>
+    </div>
+
+    <!-- Die wichtigsten Regler direkt in der einfachen Ansicht -->
+    <div class="s-ctl">
+      <div class="ctl">
+        <div class="ctl-head"><label for="snR">Betroffene Häuser</label><span class="hint">10 – 1.000</span></div>
+        <div class="row"><input type="range" id="snR" min="10" max="1000" step="1" aria-label="Anzahl Häuser">
+          <div class="field"><input id="snN" inputmode="numeric" class="w-s" aria-label="Anzahl Häuser (Zahl)"><span>Häuser</span></div></div>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="slR">Wertverlust</label><span class="hint">0 – 35 %</span></div>
+        <div class="row"><input type="range" class="r-loss" id="slR" min="0" max="35" step="1" aria-label="Wertverlust in Prozent">
+          <div class="field"><input id="slN" inputmode="numeric" class="w-s" aria-label="Wertverlust (Zahl)"><span>%</span></div></div>
+        <div class="chips loss-chips"></div>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="sgR">Gewerbesteuer pro Jahr</label><span class="hint">Annahme</span></div>
+        <div class="row"><input type="range" class="r-gst" id="sgR" min="0" max="6" step="0.1" aria-label="Gewerbesteuer in Mio. Euro pro Jahr">
+          <div class="field"><input id="sgN" inputmode="decimal" class="w-s" aria-label="Gewerbesteuer (Zahl)"><span>Mio. €</span></div></div>
+        <div class="chips gst-chips"></div>
+      </div>
+      <div class="ctl">
+        <div class="ctl-head"><label for="syR">Zeitraum</label><span class="hint">Jahre Gewerbesteuer</span></div>
+        <div class="row"><input type="range" class="r-gst" id="syR" min="5" max="40" step="1" aria-label="Zeitraum in Jahren">
+          <div class="field"><input id="syN" inputmode="numeric" class="w-s" aria-label="Zeitraum (Zahl)"><span>Jahre</span></div></div>
+      </div>
+    </div>
+    <p class="small muted" style="margin:12px 0 0;text-align:center" id="sNote">Häuser mit üblicher Wertverteilung (Ø <span id="sAvg"></span>). Gewerbesteuer: Betreiber unbekannt, Einnahmen unbelegt.</p>
+    <div class="s-actions">
+      <button class="btn primary" id="toDetail">Detaillierte Ansicht: Szenarien, Wertklassen, Diagramme ↓</button>
+      <button class="btn ghost" id="sReset">↺ Startwerte</button>
+    </div>
+  </section>
+
+  <div id="detail">
+  <!-- Druckfassung: Parameterübersicht -->
+  <section class="print-only card card-pad" id="printParams" style="margin-top:10px"></section>
+
+  <!-- ================= 5 Szenario-Presets ================= -->
+  <section id="szenarien"><h2 class="sec" style="margin-top:4px">Szenarien zur Schnellwahl</h2><div class="presets" id="presets" aria-label="Szenario-Voreinstellungen"></div></section>
+  <div class="custom-note" id="customNote">✎ Individuelle Einstellung: Sie haben ein Szenario angepasst.</div>
+
+  <div class="layout">
+
+    <!-- ================= Control Panel ================= -->
+    <section class="panel card card-pad" id="panel" aria-label="Einstellungen">
+      <h2 class="sec">Einstellungen</h2>
+
+      <!-- Anzahl Immobilien -->
+      <div class="ctl">
+        <div class="ctl-head"><label for="nRange">Betroffene Immobilien</label><span class="hint">10 – 1.000</span></div>
+        <div class="row">
+          <input type="range" id="nRange" min="10" max="1000" step="1" aria-label="Anzahl Immobilien">
+          <div class="field"><input id="nNum" inputmode="numeric" class="w-s" aria-label="Anzahl Immobilien (Zahl)"><span>Obj.</span></div>
+        </div>
+      </div>
+
+      <!-- Wertklassen -->
+      <div class="ctl">
+        <div class="ctl-head"><label>Wertklassen</label><span class="hint">Anteile passen sich automatisch an</span></div>
+        <div id="segs"></div>
+        <div class="sumcheck"><div class="sumbar" id="sumbar"></div><span id="sumTxt" class="ok">Σ 100 %</span></div>
+      </div>
+
+      <!-- Wertverlust -->
+      <div class="ctl">
+        <div class="ctl-head"><label for="lossRange">Simulierter Wertverlust</label><span class="hint">0 – 35 %</span></div>
+        <div class="row">
+          <input type="range" class="r-loss" id="lossRange" min="0" max="35" step="1" aria-label="Wertverlust in Prozent">
+          <div class="field"><input id="lossNum" inputmode="numeric" class="w-s" aria-label="Wertverlust (Zahl)"><span>%</span></div>
+        </div>
+        <div class="chips loss-chips"></div>
+      </div>
+
+      <!-- Gewerbesteuer -->
+      <div class="ctl">
+        <div class="ctl-head"><label for="gstRange">Gewerbesteuer für die Stadt</label><span class="hint">Annahme pro Jahr</span></div>
+        <div class="row">
+          <input type="range" class="r-gst" id="gstRange" min="0" max="6" step="0.1" aria-label="Gewerbesteuer in Mio. Euro pro Jahr">
+          <div class="field"><input id="gstNum" inputmode="decimal" class="w-s" aria-label="Gewerbesteuer (Zahl)"><span>Mio. €/J.</span></div>
+        </div>
+        <div class="chips gst-chips"></div>
+        <div class="ctl-head" style="margin-top:12px"><label for="yrsRange">Zeitraum</label><span class="hint">Jahre Betrieb</span></div>
+        <div class="row">
+          <input type="range" class="r-gst" id="yrsRange" min="5" max="40" step="1" aria-label="Zeitraum in Jahren">
+          <div class="field"><input id="yrsNum" inputmode="numeric" class="w-s" aria-label="Zeitraum (Zahl)"><span>Jahre</span></div>
+        </div>
+        <div class="assume">Annahme, nicht belegt: Ein Betreiber ist bisher nicht bekannt, und für die Gewerbesteuereinnahmen gibt es keinen Beleg. Im Werbeprospekt des Projektierers standen 3,5 Mio. €/Jahr; nach dessen eigenen späteren Angaben bleiben 1,6 Mio. €/Jahr (Positionspapier der BI).</div>
+      </div>
+
+      <div class="btns no-print" style="margin-top:6px">
+        <button class="btn ghost" id="resetBtn" style="padding:7px 12px;font-size:13px">↺ Startwerte wiederherstellen</button>
+      </div>
+    </section>
+
+    <!-- ================= Ergebnisse ================= -->
+    <section class="results" id="ergebnis" aria-live="polite">
+
+      <!-- KPI-Karten -->
+      <div class="kpis">
+        <div class="card kpi" style="--kc:var(--keep-bar)"><div class="kl">Gesamtwert vor Bau</div><div class="kv" id="kTotal">–</div><div class="ks" id="kTotalS"></div></div>
+        <div class="card kpi loss" style="--kc:var(--loss)"><div class="kl">Absoluter Gesamtverlust</div><div class="kv" id="kLoss">–</div><div class="ks" id="kLossS"></div></div>
+        <div class="card kpi" style="--kc:var(--navy)"><div class="kl">Verbleibender Gesamtwert</div><div class="kv" id="kRest">–</div><div class="ks" id="kRestS"></div></div>
+        <div class="card kpi" style="--kc:var(--amber)"><div class="kl">Ø Verlust pro Objekt</div><div class="kv" id="kAvg">–</div><div class="ks">je Haushalt / Immobilie</div></div>
+      </div>
+
+      <!-- Diagramme -->
+      <div class="charts">
+        <div class="card card-pad">
+          <div class="chart-head">
+            <div><h3>Restwert vs. Wertverlust je Stufe</h3><div class="small muted">in Mio. €, aktuelle Auswahl umrandet</div></div>
+            <div class="legend"><span><i style="background:var(--keep-bar)"></i>Restwert</span><span><i style="background:var(--loss)"></i>Wertverlust</span></div>
+          </div>
+          <div id="barChart"></div>
+        </div>
+        <div class="card card-pad">
+          <div class="chart-head"><div><h3>Verlust nach Preisklasse</h3><div class="small muted" id="donutSub">bei aktuellem Wertverlust</div></div></div>
+          <div class="donut-wrap">
+            <div id="donut"></div>
+            <div class="seg-list" id="segLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stufentabelle -->
+      <div class="card card-pad" id="stufen" style="scroll-margin-top:70px">
+        <div class="chart-head">
+          <div><h3>Stufentabelle</h3><div class="small muted">Verlust je Wertklasse, Gesamtverlust und Restwert, 5 % bis 25 %</div></div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="tbl">
+            <thead><tr><th>Wertverlust</th><th>Klasse 1</th><th>Klasse 2</th><th>Klasse 3</th><th>Gesamtverlust</th><th>Restwert</th><th title="Wie viele Jahre Gewerbesteuer dem Verlust entsprechen">≙ Jahre GewSt.</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="csvBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Ergebnis als CSV herunterladen</button>
+          <button class="btn ghost" id="printBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>Ansicht drucken / als PDF speichern</button>
+        </div>
+      </div>
+
+      <!-- Hinweise -->
+      <div class="card card-pad notes">
+        <h2 class="sec">Annahmen &amp; Hinweise</h2>
+        <ul>
+          <li>Dies ist eine Modellrechnung der Bürgerinitiative „Lebenswertes Schlüchtern“, kein Wertgutachten. Anzahl, Werte und Wertverlust-Prozentsätze sind Annahmen, die Sie selbst einstellen.</li>
+          <li>Rechnung: Gesamtwert = Anzahl Objekte × Σ (Anteil der Klasse × Durchschnittswert der Klasse). Verlust = Gesamtwert × Wertverlust in %.</li>
+          <li>Gewerbesteuer: Ein Betreiber des <span class="gkw">Gaskraftwerks</span> ist bisher nicht bekannt; der Projektierer will das Projekt nach eigenen Angaben nicht selbst betreiben. Belege für die genannten Einnahmen gibt es nicht. Die Summe ist nominal (ohne Inflation und Abzinsung) über den gewählten Zeitraum gerechnet.</li>
+          <li>Das Positionspapier der BI (Stand 11.11.2026) beschreibt einen „spürbaren Wertverlust von Wohneigentum und Grundstücken“ durch einen Industriekomplex dieser Größe im Sicht- und Hörfeld.</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+  </div><!-- /#detail -->
+</main>
+
+<!-- BI-Logo & Silhouette Schlüchtern (aus dem CO₂-Simulator übernommen) -->
+<div class="bi-logo"><img src="data:image/webp;base64,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" alt="Logo der Bürgerinitiative Lebenswertes Schlüchtern"></div>
+<div class="silhouette" aria-hidden="true">
+<svg viewBox="0 0 1440 200" preserveAspectRatio="xMidYMax slice">
+  <path d="M0 120 C 160 70, 300 80, 420 110 S 700 60, 860 95 S 1150 55, 1300 90 S 1440 80, 1440 80 V200 H0Z" fill="#cfe5c3"/>
+  <path d="M0 150 C 200 110, 340 130, 520 140 S 820 110, 980 135 S 1260 115, 1440 130 V200 H0Z" fill="#9ccc80"/>
+  <!-- Stadt -->
+  <g fill="#1E5A2B">
+    <!-- Häuser links -->
+    <path d="M520 160 v-18 l12 -10 l12 10 v18z M548 160 v-24 l14 -12 l14 12 v24z M580 160 v-16 l10 -9 l10 9 v16z"/>
+    <!-- Stadtkirche mit Spitzhelm -->
+    <rect x="612" y="108" width="20" height="52"/>
+    <path d="M610 110 L622 52 L634 110Z"/>
+    <rect x="620" y="44" width="4" height="10"/><rect x="616" y="47" width="12" height="2.5"/>
+    <path d="M632 160 v-28 l26 -16 l26 16 v28z"/>
+    <!-- Häuser Mitte -->
+    <path d="M690 160 v-20 l12 -10 l12 10 v20z M718 160 v-14 l9 -8 l9 8 v14z"/>
+    <!-- Kloster Schlüchtern: Kirchenschiff + zwei Türme -->
+    <path d="M746 160 v-34 h96 v34z"/>
+    <path d="M744 128 l50 -20 l50 20z"/>
+    <rect x="760" y="92" width="18" height="40"/>
+    <path d="M758 94 l11 -26 l11 26z"/>
+    <rect x="812" y="84" width="20" height="48"/>
+    <path d="M810 86 l12 -14 l12 14z"/>
+    <rect x="819" y="64" width="6" height="10"/>
+    <path d="M818 66 l4 -10 l4 10z"/>
+    <!-- Klostergebäude -->
+    <path d="M842 160 v-26 h60 v26z M840 136 l32 -14 l32 14z"/>
+    <!-- Häuser rechts -->
+    <path d="M908 160 v-18 l12 -10 l12 10 v18z M936 160 v-22 l13 -11 l13 11 v22z M966 160 v-14 l9 -8 l9 8 v14z"/>
+  </g>
+  <g fill="#D7F0C8" opacity=".85">
+    <rect x="620" y="118" width="4" height="8" rx="2"/><rect x="766" y="104" width="5" height="8" rx="2.5"/><rect x="819" y="96" width="5" height="9" rx="2.5"/>
+    <circle cx="794" cy="140" r="5"/>
+  </g>
+  <!-- Bäume -->
+  <g fill="#2f7a3f">
+    <circle cx="470" cy="150" r="12"/><circle cx="492" cy="146" r="15"/><circle cx="1010" cy="148" r="14"/><circle cx="1034" cy="152" r="11"/>
+    <circle cx="210" cy="140" r="10"/><circle cx="1220" cy="134" r="12"/>
+  </g>
+  <path d="M0 165 C 300 150, 600 172, 900 160 S 1300 150, 1440 162 V200 H0Z" fill="#1E5A2B"/>
+  <path d="M0 178 C 360 168, 720 186, 1080 174 S 1380 172, 1440 176" fill="none" stroke="#6DB33F" stroke-width="3" opacity=".7"/>
+</svg>
+</div>
+<div class="sil-cap">© BI Lebenswertes Schlüchtern · Simulation ohne Gewähr · Stand <span id="today"></span></div>
+
+
+<!-- Fußleiste: Kurzfassung + ausklappbarer Rechenweg -->
+<footer class="fuss" id="fuss">
+  <div class="fuss-panel" id="fpanel">
+    <div class="fuss-inner">
+      <div>
+        <h4>Rechenweg (aktuelle Einstellung)</h4>
+        <div class="formula" id="fFormula"></div>
+        <p class="small muted">Alle Werte direkt aus den Eingaben. Gerundet wird erst bei der Anzeige. Objektzahlen je Klasse dürfen rechnerisch anteilig sein.</p>
+      </div>
+      <div>
+        <h4>Quellen &amp; Einordnung</h4>
+        <ol class="srcs">
+          <li><b>Positionspapier der BI „Lebenswertes Schlüchtern“</b>, Stand 11.11.2026: „spürbarer Wertverlust von Wohneigentum und Grundstücken“; im Werbeprospekt versprochene Gewerbesteuer 3,5 Mio. € pro Jahr.</li>
+          <li><b>Gelnhäuser Neue Zeitung</b>, 26.08.2026: Bau ab Anfang 2028, Bauzeit ca. 2 Jahre, Betrieb mindestens 30 Jahre.</li>
+          <li><b>Energie &amp; Management</b>, 28.08.2026: Betreiber „bislang nicht bekannt“.</li>
+        </ol>
+        <h4>Was ist Annahme?</h4>
+        <p class="small muted" style="margin:0">Alles, was Sie einstellen: Zahl der betroffenen Immobilien, Anteile und Durchschnittswerte der Wertklassen, Höhe des Wertverlusts und die Gewerbesteuer. Die Szenarien sind Rechenbeispiele der BI, kein Gutachten.</p>
+      </div>
+    </div>
+  </div>
+  <div class="fuss-bar">
+    <div class="f-sum" id="fSum"></div>
+    <button class="ftoggle" id="ftog" aria-expanded="false" aria-controls="fpanel">ⓘ Rechenweg &amp; Quellen einblenden</button>
+  </div>
+</footer>
+
+<div id="tip" role="tooltip"></div>
+
+<!-- ================= Onboarding-Overlay ================= -->
+<div class="ob" id="ob" role="dialog" aria-modal="true" aria-labelledby="obTitle">
+  <div class="ob-card">
+    <button class="ob-close" id="obClose" aria-label="Schließen">×</button>
+    <div class="ob-kicker" id="obKicker">Schritt 1 von 3</div>
+    <h2 id="obTitle">So funktioniert der Simulator</h2>
+    <div class="ob-stage">
+      <div class="ob-step on" data-s="0"><div class="demo-vs"><span class="c">Stadt</span><i>vs.</i><span class="l">Bürger</span></div></div>
+      <div class="ob-step" data-s="1">
+        <div class="demo-sliders">
+          <div class="demo-sl" style="--c:var(--navy)"><b style="--a:20%;--z:70%;--d:2.2s"></b></div>
+          <div class="demo-sl" style="--c:var(--seg2)"><b style="--a:55%;--z:30%;--d:2.8s"></b></div>
+          <div class="demo-sl" style="--c:var(--loss)"><b style="--a:15%;--z:60%;--d:1.9s"></b></div>
+        </div>
+      </div>
+      <div class="ob-step" data-s="2"><div class="demo-bars"><span style="--h:12%"></span><span style="--h:24%"></span><span style="--h:36%"></span><span style="--h:48%"></span><span style="--h:60%"></span></div></div>
+    </div>
+    <div class="ob-text">
+      <p class="on"><b>Auf einen Blick.</b> Ganz oben steht, was die Stadt an Gewerbesteuer einnehmen könnte und was die Bürger an Immobilienwert verlieren. Vorausgefüllt: 200 Häuser, 20 % Wertverlust, 20 Jahre, 1,6 Mio. € pro Jahr.</p>
+      <p><b>Selbst anpassen.</b> Die wichtigsten Werte ändern Sie direkt darunter per Schieberegler. In der „Detaillierten Ansicht“ gibt es 6 Szenarien, vom vorsichtigen bis zum Worst Case, und die drei Wertklassen mit Anteilen und Durchschnittswerten.</p>
+      <p><b>Ergebnis ablesen.</b> Zahlen, Diagramme und die Stufentabelle rechnen sofort mit. Ihre gewählte Stufe ist farbig hervorgehoben. Das Ergebnis können Sie als CSV laden oder drucken.</p>
+    </div>
+    <div class="ob-foot">
+      <div class="dots" id="obDots"><i class="on"></i><i></i><i></i></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" id="obBack" style="visibility:hidden">Zurück</button>
+        <button class="btn primary" id="obNext">Weiter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   1. KONSTANTEN & PRESETS
+   ===================================================================== */
+const SEGMENTS = [
+  { name:"Klasse 1", label:"150.000 – 250.000 €",   min:150000, max:250000,  color:"var(--seg1)", hex:"#F6A04D" },
+  { name:"Klasse 2", label:"250.001 – 500.000 €",   min:250000, max:500000,  color:"var(--seg2)", hex:"#E8641B" },
+  { name:"Klasse 3", label:"500.001 – 1.000.000 €", min:500000, max:1000000, color:"var(--seg3)", hex:"#A3211A" },
+];
+const STAGES = [5, 10, 15, 20, 25];          // feste Stufen für Diagramm & Tabelle
+const DEFAULT_AVGS = [200000, 375000, 750000];
+
+/** Gewerbesteuer-Schnellwahl (Mio. € pro Jahr) */
+const GST_OPTIONS = [
+  { v:1.6, sub:"nach Angaben des Projektierers" },
+  { v:3.5, sub:"Werbeprospekt" },
+];
+/** Startwerte der einfachen Ansicht (Vorgabe Christian, 21.11.2026) */
+const START = { n:200, shares:[25,50,25], avgs:[200000,375000,750000], loss:20, gst:1.6, years:20 };
+
+const PRESETS = [
+  { id:"start",   title:"Startwerte",
+    desc:"200 Häuser, übliche Durchmischung, 20 % Verlust, 20 Jahre Gewerbesteuer", ...START, label:"START" },
+  { id:"basis",   title:"Basis-Szenario (Standard)",
+    desc:"200 Objekte, übliche Durchmischung", n:200, shares:[25,50,25], avgs:[200000,375000,750000], loss:15 },
+  { id:"konserv", title:"Konservativ / geringe Beeinträchtigung",
+    desc:"Gleiche Werte, nur Sicht- und Lärmwahrnehmung", n:200, shares:[25,50,25], avgs:[200000,375000,750000], loss:5 },
+  { id:"kern",    title:"Kernzone Am Reitstück",
+    desc:"80 Objekte, direkte Nachbarschaft, höherwertige Einfamilienhäuser", n:80, shares:[0,40,60], avgs:[200000,450000,800000], loss:25 },
+  { id:"radius",  title:"Erweiterter Radius (Schlüchtern & Elm)",
+    desc:"450 Objekte, breite Durchmischung", n:450, shares:[35,45,20], avgs:[220000,380000,700000], loss:10 },
+  { id:"worst",   title:"Worst Case (maximaler Abschlag)",
+    desc:"250 Objekte, hohe Immobilienwerte", n:250, shares:[20,50,30], avgs:[250000,450000,900000], loss:25 },
+];
+
+/* =====================================================================
+   2. ZUSTAND
+   ===================================================================== */
+const state = {
+  n:START.n, shares:[...START.shares], avgs:[...START.avgs], loss:START.loss,
+  gst:START.gst,     // Gewerbesteuer in Mio. € pro Jahr (Annahme)
+  years:START.years, // Zeitraum in Jahren
+  preset:"start",
+};
+
+/* =====================================================================
+   3. RECHENKERN
+   ===================================================================== */
+/** Wert je Segment (exakt, Objekte dürfen rechnerisch anteilig sein) */
+function segValues(s = state){
+  return SEGMENTS.map((_, i) => s.n * (s.shares[i] / 100) * s.avgs[i]);
+}
+function totalValue(s = state){ return segValues(s).reduce((a, b) => a + b, 0); }
+/** Ergebnis für einen bestimmten Wertverlust in % */
+function calcAt(pct, s = state){
+  const vals = segValues(s);
+  const segLoss = vals.map(v => v * pct / 100);
+  const total = vals.reduce((a, b) => a + b, 0);
+  const loss = segLoss.reduce((a, b) => a + b, 0);
+  return { pct, vals, segLoss, total, loss, rest: total - loss };
+}
+function gstTotal(){ return state.gst * 1e6 * state.years; }
+
+/** Anteile proportional anpassen, sodass die Summe immer 100 % ergibt. */
+function setShare(idx, value){
+  value = clamp(Math.round(value), 0, 100);
+  const others = [0,1,2].filter(i => i !== idx);
+  const rest = 100 - value;
+  const oSum = others.reduce((a, i) => a + state.shares[i], 0);
+  let parts = others.map(i => oSum > 0 ? state.shares[i] / oSum * rest : rest / 2);
+  // ganzzahlig runden, Rundungsdifferenz dem größten Teil zuschlagen
+  let r = parts.map(Math.round);
+  const diff = rest - r[0] - r[1];
+  r[parts[0] >= parts[1] ? 0 : 1] += diff;
+  state.shares[idx] = value;
+  others.forEach((i, k) => state.shares[i] = r[k]);
+}
+
+/* =====================================================================
+   4. FORMATIERUNG & UI-BINDUNG
+   ===================================================================== */
+const nf0 = new Intl.NumberFormat("de-DE", { maximumFractionDigits:0 });
+const nf1 = new Intl.NumberFormat("de-DE", { minimumFractionDigits:1, maximumFractionDigits:1 });
+const nf2 = new Intl.NumberFormat("de-DE", { minimumFractionDigits:2, maximumFractionDigits:2 });
+const eur  = v => nf0.format(Math.round(v)) + " €";
+const mio  = v => (Math.abs(v) < 1e8 ? nf2 : nf1).format(v / 1e6) + " Mio. €";
+const mioS = v => (Math.abs(v) < 1e8 ? nf2 : nf1).format(v / 1e6);          // ohne Einheit
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+/** deutsche Zahleneingabe lesen: „1.250.000“ oder „3,5“ */
+function parseDe(str){
+  str = String(str).trim().replace(/\s|€|%/g, "");
+  if (/,/.test(str)) str = str.replace(/\./g, "").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(str)) str = str.replace(/\./g, "");
+  const v = parseFloat(str);
+  return isFinite(v) ? v : NaN;
+}
+const $ = id => document.getElementById(id);
+
+/** Füllstand der Slider-Spur (WebKit) setzen */
+function paintRange(el){
+  const p = (el.value - el.min) / (el.max - el.min) * 100;
+  el.style.setProperty("--fill", p + "%");
+}
+
+/* --- Presets rendern --- */
+function renderPresets(){
+  $("presets").innerHTML = PRESETS.map((p, i) => `
+    <button class="preset" data-id="${p.id}" aria-pressed="false">
+      <span class="check">✓</span>
+      <div class="pn">${p.label || "SZENARIO " + i}</div>
+      <div class="pt">${p.title}</div>
+      <div class="pd">${p.desc}</div>
+      <span class="pl">${p.n} Objekte · ${p.loss} % Verlust</span>
+    </button>`).join("");
+  $("presets").querySelectorAll(".preset").forEach(b =>
+    b.addEventListener("click", () => applyPreset(b.dataset.id)));
+}
+function applyPreset(id){
+  const p = PRESETS.find(x => x.id === id);
+  Object.assign(state, { n:p.n, shares:[...p.shares], avgs:[...p.avgs], loss:p.loss, preset:id });
+  if (p.gst !== undefined){ state.gst = p.gst; state.years = p.years; }   // nur „Startwerte“ setzt auch Steuer & Jahre
+  syncInputs(); update(true);
+}
+/** Prüfen, ob die aktuellen Werte noch exakt einem Preset entsprechen */
+function detectPreset(){
+  const p = PRESETS.find(p => p.n === state.n && p.loss === state.loss &&
+    (p.gst === undefined || (Math.abs(p.gst - state.gst) < 1e-9 && p.years === state.years)) &&
+    p.shares.every((v, i) => v === state.shares[i]) &&
+    p.avgs.every((v, i) => p.shares[i] === 0 || v === state.avgs[i]));
+  state.preset = p ? p.id : null;
+}
+
+/* --- Wertklassen-Regler rendern --- */
+function renderSegs(){
+  $("segs").innerHTML = SEGMENTS.map((s, i) => `
+    <div class="seg" style="--sc:${s.color}">
+      <div class="seg-title"><b>${s.name}</b><span>${s.label}</span></div>
+      <div class="row">
+        <input type="range" id="shR${i}" min="0" max="100" step="1" style="--c:${s.color}" aria-label="Anteil ${s.name}">
+        <div class="field"><input id="shN${i}" inputmode="numeric" class="w-s" aria-label="Anteil ${s.name} (Zahl)"><span>%</span></div>
+      </div>
+      <div class="row">
+        <input type="range" id="avR${i}" min="${s.min}" max="${s.max}" step="5000" style="--c:${s.color}" aria-label="Durchschnittswert ${s.name}">
+        <div class="field"><input id="avN${i}" inputmode="numeric" aria-label="Durchschnittswert ${s.name} (Zahl)"><span>€</span></div>
+      </div>
+      <div class="sub" id="segSub${i}"></div>
+    </div>`).join("");
+
+  SEGMENTS.forEach((s, i) => {
+    $("shR" + i).addEventListener("input", e => { setShare(i, +e.target.value); syncInputs(); update(); });
+    $("shN" + i).addEventListener("change", e => {
+      const v = parseDe(e.target.value); if (!isNaN(v)) setShare(i, v); syncInputs(); update();
+    });
+    $("avR" + i).addEventListener("input", e => { state.avgs[i] = +e.target.value; syncInputs(); update(); });
+    $("avN" + i).addEventListener("change", e => {
+      const v = parseDe(e.target.value); if (!isNaN(v)) state.avgs[i] = clamp(Math.round(v), s.min, s.max);
+      syncInputs(); update();
+    });
+  });
+}
+
+/* --- Einfache Regler (Anzahl, Verlust, Gewerbesteuer, Jahre) koppeln --- */
+function bindPair(rangeId, numId, key, {min, max, step = 1, fmt = v => nf0.format(v)}){
+  $(rangeId).addEventListener("input", e => { state[key] = +e.target.value; syncInputs(); update(); });
+  $(numId).addEventListener("change", e => {
+    const v = parseDe(e.target.value);
+    if (!isNaN(v)) state[key] = clamp(Math.round(v / step) * step, min, max);
+    syncInputs(); update();
+  });
+  $(numId).addEventListener("keydown", e => { if (e.key === "Enter") e.target.blur(); });
+  $(numId)._fmt = fmt;
+}
+
+/** Alle Eingabefelder aus dem Zustand befüllen */
+function syncInputs(){
+  const set = (id, v, txt) => { const el = $(id); if (el.type === "range"){ el.value = v; paintRange(el); } else if (document.activeElement !== el || txt !== undefined) el.value = txt ?? v; };
+  set("nRange", state.n); $("nNum").value = nf0.format(state.n);
+  set("lossRange", state.loss); $("lossNum").value = state.loss;
+  set("gstRange", state.gst); $("gstNum").value = nf1.format(state.gst);
+  set("yrsRange", state.years); $("yrsNum").value = state.years;
+  // einfache Ansicht
+  set("snR", state.n); $("snN").value = nf0.format(state.n);
+  set("slR", state.loss); $("slN").value = state.loss;
+  set("sgR", state.gst); $("sgN").value = nf1.format(state.gst);
+  set("syR", state.years); $("syN").value = state.years;
+  SEGMENTS.forEach((s, i) => {
+    set("shR" + i, state.shares[i]); $("shN" + i).value = state.shares[i];
+    set("avR" + i, state.avgs[i]); $("avN" + i).value = nf0.format(state.avgs[i]);
+  });
+  // Schnellwahl-Chips markieren
+  document.querySelectorAll(".loss-chips .chip").forEach(c => c.classList.toggle("on", +c.dataset.v === state.loss));
+  document.querySelectorAll(".gst-chips .chip").forEach(c => c.classList.toggle("on", Math.abs(+c.dataset.gst - state.gst) < 1e-9));
+}
+
+/* --- Hauptaktualisierung: alle Ausgaben neu berechnen --- */
+let lastLoss = null;
+function update(fromPreset = false){
+  if (!fromPreset) detectPreset();
+  const cur = calcAt(state.loss);
+
+  // Preset-Markierung
+  document.querySelectorAll(".preset").forEach(b => {
+    const on = b.dataset.id === state.preset;
+    b.classList.toggle("active", on); b.setAttribute("aria-pressed", on);
+  });
+  $("customNote").classList.toggle("on", !state.preset);
+
+  // Summenprüfung Wertklassen
+  const sum = state.shares.reduce((a, b) => a + b, 0);
+  $("sumbar").innerHTML = state.shares.map((v, i) => `<i style="width:${v}%;background:${SEGMENTS[i].color}"></i>`).join("");
+  $("sumTxt").textContent = sum === 100 ? "Σ 100 % ✓" : `Σ ${sum} %`;
+  $("sumTxt").className = sum === 100 ? "ok" : "";
+  SEGMENTS.forEach((s, i) => {
+    $("segSub" + i).textContent = `≈ ${nf0.format(state.n * state.shares[i] / 100)} Objekte · ${mio(cur.vals[i])} Bestandswert`;
+  });
+
+  // KPI-Karten
+  setKpi("kTotal", mio(cur.total));
+  setKpi("kLoss", "− " + mio(cur.loss));
+  setKpi("kRest", mio(cur.rest));
+  setKpi("kAvg", "− " + eur(state.n ? cur.loss / state.n : 0));
+  $("kTotalS").textContent = `${nf0.format(state.n)} Objekte, Ø ${eur(state.n ? cur.total / state.n : 0)}`;
+  $("kLossS").textContent = `${state.loss} % Wertverlust`;
+  $("kRestS").textContent = `${nf0.format(100 - state.loss)} % des Ausgangswerts`;
+
+  renderCompare(cur);
+  renderBarChart();
+  renderDonut(cur);
+  renderTable();
+  renderPrintParams();
+  renderFooter(cur);
+  lastLoss = cur.loss;
+}
+/** KPI setzen: Zahl groß, Einheit („Mio. €“ / „€“) klein; kurz aufblinken bei Änderung */
+function setKpi(id, txt){
+  const el = $(id);
+  const m = txt.match(/^(.*?)\s*(Mio\. €|€)$/);
+  const html = m ? `${m[1]}<small>${m[2]}</small>` : txt;
+  if (el.innerHTML !== html){ el.innerHTML = html; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+}
+
+/* --- Gegenüberstellung oben: Stadt nimmt ein vs. Bürger verlieren --- */
+function renderCompare(cur){
+  const g = gstTotal();
+  const max = Math.max(cur.loss, g, 1);
+  const big = v => `${(v < 1e6 ? nf2 : nf1).format(v / 1e6)}<small>Mio. €</small>`;
+  $("cGstV").innerHTML = big(g);
+  $("cLossV").innerHTML = big(cur.loss);
+  $("cGstSub").innerHTML = `Gewerbesteuer <b>${nf1.format(state.gst)} Mio. €</b> × <b>${state.years} Jahre</b><br>Annahme, nicht belegt`;
+  $("cLossSub").innerHTML = `<b>${nf0.format(state.n)} Häuser</b> × Ø ${eur(state.n ? cur.total / state.n : 0)} × <b>${state.loss} %</b> Wertverlust`;
+  $("cLossF").style.width = (cur.loss / max * 100) + "%";
+  $("cGstF").style.width = (g / max * 100) + "%";
+  $("cLossT").dataset.tip = `<b>Wertverlust der Bürger</b><br>${eur(cur.loss)}<br>${state.loss} % von ${mio(cur.total)}`;
+  $("cGstT").dataset.tip = `<b>Gewerbesteuer (Annahme)</b><br>${eur(g)}<br>${nf1.format(state.gst)} Mio. € pro Jahr × ${state.years} Jahre`;
+  $("fPerHouse").textContent = "− " + eur(state.n ? cur.loss / state.n : 0);
+  $("fPerYear").textContent = nf1.format(state.gst) + " Mio. €";
+  $("sAvg").textContent = eur(state.n ? cur.total / state.n : 0);
+  if (state.gst > 0){
+    $("cYears").textContent = nf1.format(cur.loss / (state.gst * 1e6)) + " Jahre";
+    $("cYearsTxt").textContent = "Gewerbesteuer bräuchte die Stadt, um rechnerisch den Wertverlust der Bürger aufzuwiegen";
+  } else {
+    $("cYears").textContent = "0 €";
+    $("cYearsTxt").textContent = "Ohne Gewerbesteuer steht dem Wertverlust keine Einnahme gegenüber";
+  }
+}
+
+/* =====================================================================
+   5. DIAGRAMME (selbst gezeichnetes SVG, keine Bibliothek nötig)
+   ===================================================================== */
+/** Stufenliste: feste 5-%-Stufen plus ggf. aktuelle Auswahl, sortiert */
+function stageList(){
+  const list = [...STAGES];
+  if (!list.includes(state.loss)) list.push(state.loss);
+  return list.sort((a, b) => a - b);
+}
+/** „schöne“ Achsenschritte */
+function niceStep(max, ticks = 5){
+  const raw = max / ticks, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const m = raw / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+}
+function renderBarChart(){
+  const list = stageList();
+  const total = totalValue();
+  // Breite = tatsächliche Containerbreite, damit Schrift überall gleich groß bleibt
+  const W = Math.max(300, Math.min(720, $("barChart").clientWidth || 520)), H = 320, L = 40, R = 6, T = 30, B = 42;
+  const step = niceStep(total / 1e6 || 1);
+  const yMax = Math.max(step, Math.ceil((total / 1e6) / step) * step);
+  const y = v => T + (H - T - B) * (1 - v / yMax);
+  const slot = (W - L - R) / list.length, bw = Math.min(60, slot * .6);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block" role="img" aria-label="Balkendiagramm Restwert und Wertverlust je Stufe">`;
+  // Gitterlinien & Achse
+  for (let v = 0; v <= yMax + 1e-9; v += step){
+    s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#e7ece6" ${v === 0 ? 'stroke="#b9c2bb"' : ""}/>`;
+    s += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="13" fill="#5b6560">${nf0.format(v)}</text>`;
+  }
+  list.forEach((p, i) => {
+    const r = calcAt(p), cx = L + slot * i + slot / 2, x = cx - bw / 2;
+    const isCur = p === state.loss, extra = !STAGES.includes(p);
+    const yR = y(r.rest / 1e6), yT = y(r.total / 1e6), y0 = y(0);
+    const tip = `<b>${p} % Wertverlust${isCur ? " (Ihre Wahl)" : ""}</b><br>Wertverlust: ${mio(r.loss)}<br>Restwert: ${mio(r.rest)}<br>Gesamtwert: ${mio(r.total)}`;
+    s += `<g class="bar-g" data-tip="${tip.replace(/"/g, "&quot;")}">`;
+    s += `<rect x="${x}" y="${yR}" width="${bw}" height="${Math.max(0, y0 - yR)}" fill="#6DB33F" rx="2"/>`;
+    s += `<rect x="${x}" y="${yT}" width="${bw}" height="${Math.max(0, yR - yT)}" fill="#CD281E" rx="2"/>`;
+    if (isCur) s += `<rect x="${x - 4}" y="${yT - 4}" width="${bw + 8}" height="${y0 - yT + 4}" fill="none" stroke="#232826" stroke-width="2.5" rx="5"/>`;
+    s += `<rect x="${cx - slot / 2}" y="${T - 20}" width="${slot}" height="${H - T + 20}" fill="transparent"/>`;
+    s += `<text x="${cx}" y="${yT - 9}" text-anchor="middle" font-size="13.5" font-weight="800" fill="#CD281E">−${mioS(r.loss)}</text>`;
+    s += `<text x="${cx}" y="${H - B + 18}" text-anchor="middle" font-size="14" font-weight="${isCur ? 900 : 600}" fill="${isCur ? "#232826" : "#5b6560"}">${p} %</text>`;
+    if (extra) s += `<text x="${cx}" y="${H - B + 33}" text-anchor="middle" font-size="12" font-weight="700" fill="#CD281E">Ihre Wahl</text>`;
+    s += `</g>`;
+  });
+  s += `</svg>`;
+  $("barChart").innerHTML = s;
+}
+
+function renderDonut(cur){
+  const R = 58, C = 2 * Math.PI * R, size = 150;
+  const loss = cur.loss;
+  let off = 0, arcs = "";
+  cur.segLoss.forEach((v, i) => {
+    const frac = loss > 0 ? v / loss : 0;
+    if (frac <= 0) return;
+    const len = frac * C;
+    const tip = `<b>${SEGMENTS[i].name}</b> (${SEGMENTS[i].label})<br>Verlust: ${mio(v)}<br>Anteil am Gesamtverlust: ${nf0.format(frac * 100)} %`;
+    arcs += `<circle r="${R}" cx="${size / 2}" cy="${size / 2}" fill="none" stroke="${SEGMENTS[i].hex}" stroke-width="24"
+              stroke-dasharray="${Math.max(0, len - 1.5)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 ${size / 2} ${size / 2})"
+              data-tip="${tip.replace(/"/g, "&quot;")}" style="transition:stroke-dasharray .4s"/>`;
+    off += len;
+  });
+  $("donut").innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="150" height="150" role="img" aria-label="Verlust nach Preisklasse">
+      <circle r="${R}" cx="${size / 2}" cy="${size / 2}" fill="none" stroke="#e7ece6" stroke-width="24"/>${arcs}
+      <text x="${size / 2}" y="${size / 2 - 4}" text-anchor="middle" font-size="19" font-weight="900" fill="#CD281E">−${mioS(loss)}</text>
+      <text x="${size / 2}" y="${size / 2 + 14}" text-anchor="middle" font-size="11" fill="#5b6560">Mio. € gesamt</text></svg>`;
+  $("donutSub").textContent = `bei ${state.loss} % Wertverlust`;
+  $("segLegend").innerHTML = SEGMENTS.map((s, i) => {
+    const frac = loss > 0 ? cur.segLoss[i] / loss * 100 : 0;
+    return `<div class="seg-item"><i style="background:${s.hex}"></i>
+      <div class="sn">${s.name} · ${nf0.format(frac)} %<small>${s.label} · ≈ ${nf0.format(state.n * state.shares[i] / 100)} Obj.</small></div>
+      <div class="sv" style="color:var(--loss)">−${mio(cur.segLoss[i])}</div></div>`;
+  }).join("");
+}
+
+/* =====================================================================
+   6. STUFENTABELLE
+   ===================================================================== */
+function renderTable(){
+  const tb = document.querySelector("#tbl tbody");
+  tb.innerHTML = stageList().map(p => {
+    const r = calcAt(p), cur = p === state.loss;
+    const yrs = state.gst > 0 ? nf1.format(r.loss / (state.gst * 1e6)) : "–";
+    return `<tr class="${cur ? "cur" : ""}">
+      <td><b>${p} %</b>${cur ? '<span class="tag">Ihre Wahl</span>' : ""}</td>
+      ${r.segLoss.map(v => `<td>${mio(v)}</td>`).join("")}
+      <td class="l">− ${mio(r.loss)}</td><td class="k">${mio(r.rest)}</td><td>${yrs}</td></tr>`;
+  }).join("");
+}
+
+/* =====================================================================
+   7. EXPORT (CSV / Druck)
+   ===================================================================== */
+function csvNum(v, d = 0){ return v.toLocaleString("de-DE", { minimumFractionDigits:d, maximumFractionDigits:d, useGrouping:false }); }
+function downloadCsv(){
+  const rows = [];
+  const q = s => `"${String(s).replace(/"/g, '""')}"`;
+  rows.push([q("Immobilienwert-Simulator Am Reitstück – BI Lebenswertes Schlüchtern"), q("Stand " + new Date().toLocaleDateString("de-DE"))]);
+  rows.push([]);
+  rows.push([q("Parameter"), q("Wert")]);
+  rows.push([q("Szenario"), q(state.preset ? PRESETS.find(p => p.id === state.preset).title : "Individuell")]);
+  rows.push([q("Anzahl Immobilien"), state.n]);
+  SEGMENTS.forEach((s, i) => {
+    rows.push([q(`${s.name} (${s.label}) Anteil %`), state.shares[i]]);
+    rows.push([q(`${s.name} Durchschnittswert €`), state.avgs[i]]);
+  });
+  rows.push([q("Gewählter Wertverlust %"), state.loss]);
+  rows.push([q("Gewerbesteuer Mio. €/Jahr (Annahme)"), csvNum(state.gst, 1)]);
+  rows.push([q("Zeitraum Jahre"), state.years]);
+  rows.push([q("Gewerbesteuer gesamt €"), csvNum(gstTotal())]);
+  rows.push([q("Gesamtwert vor Bau €"), csvNum(totalValue())]);
+  rows.push([]);
+  rows.push(["Wertverlust %", ...SEGMENTS.map(s => `Verlust ${s.name} €`), "Gesamtverlust €", "Restwert €", "Ø Verlust pro Objekt €", "Entspricht Jahren Gewerbesteuer", "Ihre Wahl"].map(q));
+  stageList().forEach(p => {
+    const r = calcAt(p);
+    rows.push([p, ...r.segLoss.map(v => csvNum(v)), csvNum(r.loss), csvNum(r.rest),
+      csvNum(state.n ? r.loss / state.n : 0), state.gst > 0 ? csvNum(r.loss / (state.gst * 1e6), 1) : "", p === state.loss ? "x" : ""]);
+  });
+  rows.push([]);
+  rows.push([q("Hinweis: Modellrechnung, kein Wertgutachten. Gewerbesteuer ist eine unbelegte Annahme; Betreiber unbekannt.")]);
+  const csv = "﻿" + rows.map(r => r.join(";")).join("\r\n");
+  const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `immobilienwert_simulation_${state.loss}prozent.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function renderPrintParams(){
+  const pn = state.preset ? PRESETS.find(p => p.id === state.preset).title : "Individuelle Einstellung";
+  $("printParams").innerHTML = `<b>Szenario:</b> ${pn} · <b>${nf0.format(state.n)} Objekte</b> · ` +
+    SEGMENTS.map((s, i) => `${s.name}: ${state.shares[i]} % à ${eur(state.avgs[i])}`).join(" · ") +
+    ` · <b>Wertverlust ${state.loss} %</b> · Gewerbesteuer (Annahme) ${nf1.format(state.gst)} Mio. €/Jahr über ${state.years} Jahre`;
+}
+
+/** Fußleiste: Kurzfassung und Rechenweg mit den aktuellen Zahlen */
+function renderFooter(cur){
+  const g = gstTotal();
+  $("fSum").innerHTML = `<b>${nf0.format(state.n)} Objekte</b> · Gesamtwert ${mio(cur.total)} · <b style="color:var(--rot)">Verlust bei ${state.loss} %: − ${mio(cur.loss)}</b> · Gewerbesteuer (Annahme) ${mio(g)} in ${state.years} Jahren`;
+  const lines = SEGMENTS.map((s, i) =>
+    `${s.name}: ${nf0.format(state.n)} × ${state.shares[i]} % × ${eur(state.avgs[i])} = ${eur(cur.vals[i])}`);
+  $("fFormula").innerHTML =
+    lines.join("\n") +
+    `\nGesamtwert vor Bau          = <b>${eur(cur.total)}</b>` +
+    `\nWertverlust ${state.loss} % × Gesamtwert = <b>${eur(cur.loss)}</b>` +
+    `\nRestwert                    = ${eur(cur.rest)}` +
+    `\nØ Verlust je Objekt         = ${eur(state.n ? cur.loss / state.n : 0)}` +
+    `\n\nGewerbesteuer ${nf1.format(state.gst)} Mio. € × ${state.years} Jahre = <b>${eur(g)}</b> (Annahme)` +
+    (state.gst > 0 ? `\nWertverlust ÷ Gewerbesteuer pro Jahr = <b>${nf1.format(cur.loss / (state.gst * 1e6))} Jahre</b>` : "");
+}
+
+/* =====================================================================
+   8. ONBOARDING-OVERLAY (3 Schritte, erscheint beim ersten Besuch)
+   ===================================================================== */
+const OB_KEY = "bi_immosim_onboarding_v1";
+let obStep = 0;
+function obShow(step){
+  obStep = step;
+  document.querySelectorAll(".ob-step").forEach((el, i) => {
+    el.classList.toggle("on", i === step); el.classList.toggle("prev", i < step);
+  });
+  document.querySelectorAll(".ob-text p").forEach((el, i) => el.classList.toggle("on", i === step));
+  document.querySelectorAll("#obDots i").forEach((el, i) => el.classList.toggle("on", i === step));
+  $("obKicker").textContent = `Schritt ${step + 1} von 3`;
+  $("obBack").style.visibility = step ? "visible" : "hidden";
+  $("obNext").textContent = step === 2 ? "Verstanden & Simulation starten" : "Weiter";
+}
+function obOpen(){ obShow(0); $("ob").classList.add("open"); setTimeout(() => $("obNext").focus(), 50); }
+function obClose(){
+  $("ob").classList.remove("open");
+  try { localStorage.setItem(OB_KEY, "1"); } catch (e) { /* Speicher nicht verfügbar – egal */ }
+}
+
+/* =====================================================================
+   TOOLTIP (für Diagramme & Vergleichsbalken)
+   ===================================================================== */
+function initTooltip(){
+  const tip = $("tip");
+  document.addEventListener("mousemove", e => {
+    const t = e.target.closest && e.target.closest("[data-tip]");
+    if (!t || !t.dataset.tip){ tip.classList.remove("on"); return; }
+    tip.innerHTML = t.dataset.tip; tip.classList.add("on");
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+    if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  });
+  document.addEventListener("scroll", () => tip.classList.remove("on"), { passive:true });
+}
+
+/* =====================================================================
+   ANSICHT: einfach (nur Gegenüberstellung) oder detailliert (alles)
+   ===================================================================== */
+const VIEW_KEY = "bi_immosim_view_v1";
+function setView(v){
+  const detail = v === "detail";
+  document.body.classList.toggle("simple-view", !detail);
+  document.querySelectorAll(".vtog button").forEach(b => b.classList.toggle("on", b.dataset.view === v));
+  $("toDetail").style.display = detail ? "none" : "";
+  try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
+  if (detail) renderBarChart();   // Breite erst sichtbar korrekt messbar
+}
+
+/* =====================================================================
+   START
+   ===================================================================== */
+function init(){
+  renderPresets();
+  renderSegs();
+  // Schnellwahl Wertverlust
+  document.querySelectorAll(".loss-chips").forEach(el => el.innerHTML = STAGES.map(v => `<button class="chip" data-v="${v}">${v} %</button>`).join(""));
+  document.querySelectorAll(".gst-chips").forEach(el => el.innerHTML = GST_OPTIONS.map(o =>
+    `<button class="chip gst big" data-gst="${o.v}">${nf1.format(o.v)} Mio. €<span class="cs">${o.sub}</span></button>`).join(""));
+  document.querySelectorAll(".loss-chips .chip").forEach(c => c.addEventListener("click", () => { state.loss = +c.dataset.v; syncInputs(); update(); }));
+  document.querySelectorAll(".gst-chips .chip").forEach(c => c.addEventListener("click", () => { state.gst = +c.dataset.gst; syncInputs(); update(); }));
+
+  bindPair("nRange", "nNum", "n", { min:10, max:1000 });
+  bindPair("lossRange", "lossNum", "loss", { min:0, max:35 });
+  bindPair("gstRange", "gstNum", "gst", { min:0, max:20, step:0.1 });
+  bindPair("yrsRange", "yrsNum", "years", { min:1, max:60 });
+  bindPair("snR", "snN", "n", { min:10, max:1000 });
+  bindPair("slR", "slN", "loss", { min:0, max:35 });
+  bindPair("sgR", "sgN", "gst", { min:0, max:20, step:0.1 });
+  bindPair("syR", "syN", "years", { min:1, max:60 });
+
+  // Ansicht umschalten (einfach / detailliert), Wahl wird gemerkt
+  document.querySelectorAll(".vtog button").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+  $("toDetail").addEventListener("click", () => { setView("detail"); $("detail").scrollIntoView({ behavior:"smooth" }); });
+  $("sReset").addEventListener("click", () => applyPreset("start"));
+  let v = "simple"; try { v = localStorage.getItem(VIEW_KEY) || "simple"; } catch (e) {}
+  setView(v);
+  // Zahlenfelder: Enter übernimmt
+  document.querySelectorAll(".field input").forEach(el => el.addEventListener("keydown", e => { if (e.key === "Enter") el.blur(); }));
+
+  $("resetBtn").addEventListener("click", () => applyPreset("start"));
+  $("csvBtn").addEventListener("click", downloadCsv);
+  $("printBtn").addEventListener("click", () => window.print());
+  $("hdrPrint").addEventListener("click", () => window.print());
+  $("ftog").addEventListener("click", () => {
+    const open = $("fuss").classList.toggle("open");
+    $("ftog").setAttribute("aria-expanded", open);
+    $("ftog").textContent = open ? "✕ Rechenweg & Quellen ausblenden" : "ⓘ Rechenweg & Quellen einblenden";
+  });
+
+  // Onboarding
+  $("helpBtn").addEventListener("click", obOpen);
+  $("obClose").addEventListener("click", obClose);
+  $("obBack").addEventListener("click", () => obShow(Math.max(0, obStep - 1)));
+  $("obNext").addEventListener("click", () => obStep < 2 ? obShow(obStep + 1) : obClose());
+  $("ob").addEventListener("click", e => { if (e.target.id === "ob") obClose(); });
+  document.addEventListener("keydown", e => {
+    if (!$("ob").classList.contains("open")) return;
+    if (e.key === "Escape") obClose();
+    if (e.key === "ArrowRight" && obStep < 2) obShow(obStep + 1);
+    if (e.key === "ArrowLeft" && obStep > 0) obShow(obStep - 1);
+  });
+
+  $("today").textContent = new Date().toLocaleDateString("de-DE", { month:"long", year:"numeric" });
+  initTooltip();
+  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(renderBarChart, 120); });
+  syncInputs(); update(true);
+
+  let seen = false;
+  try { seen = localStorage.getItem(OB_KEY) === "1"; } catch (e) {}
+  if (!seen) setTimeout(obOpen, 350);
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
